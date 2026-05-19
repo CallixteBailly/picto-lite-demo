@@ -67,13 +67,14 @@ onMounted(() => {
   gap: 0.25rem;
   padding: 0.2rem;
   border-radius: 20px;
-  border: 1px solid rgba($grey-blue-color, 0.4);
-  background: rgba($white-color, 0.8);
+  border: 1px solid var(--lang-switcher-border);
+  background: var(--lang-switcher-bg);
 
   .btn {
     display: inline-block;
     text-decoration: none;
-    color: rgba($primary-text-color, 0.6);
+    color: var(--text-color);
+    opacity: 0.6;
     padding: 0.35rem 0.7rem;
     font-size: 0.75rem;
     font-weight: 600;
@@ -82,16 +83,22 @@ onMounted(() => {
     cursor: pointer;
     transition:
       color 0.2s ease,
-      background 0.2s ease;
+      background 0.2s ease,
+      opacity 0.2s ease;
 
     &:hover {
-      color: $primary-text-color;
+      opacity: 1;
     }
 
     &.active {
-      background: linear-gradient(120deg, $blue-color, $grey-blue-color);
-      color: $white-color;
-      box-shadow: 0 2px 12px rgba($blue-color, 0.3);
+      background: linear-gradient(
+        120deg,
+        var(--blue-color),
+        var(--grey-blue-color)
+      );
+      color: var(--btn-text-color);
+      opacity: 1;
+      box-shadow: 0 2px 12px rgba(91, 156, 246, 0.3);
       cursor: default;
     }
   }

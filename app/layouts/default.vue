@@ -16,7 +16,6 @@
 
 <script setup lang="ts">
 function setVh() {
-  // set --vh to 1% of the current viewport height
   document.documentElement.style.setProperty(
     '--vh',
     `${window.innerHeight * 0.01}px`
@@ -49,20 +48,20 @@ html {
   -webkit-text-size-adjust: 100%;
   -moz-osx-font-smoothing: grayscale;
   -webkit-font-smoothing: antialiased;
-  color: $primary-text-color;
+  color: var(--text-color);
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
-  background-color: $background-color;
+  background-color: var(--bg-color);
 }
 
 body {
   margin: 0;
   padding: 0;
-  background-color: $background-color;
+  background-color: var(--bg-color);
 
   #__nuxt,
   #__layout {
-    background-color: $background-color;
+    background-color: var(--bg-color);
   }
 }
 
@@ -74,18 +73,22 @@ body {
 
 ::-webkit-scrollbar-track {
   border-radius: 10px;
-  border: 1px solid #caca;
-  background-color: #f1f1f1;
+  border: 1px solid var(--scrollbar-border);
+  background-color: var(--scrollbar-track);
   box-shadow: inset 0 0 6px rgba(255, 255, 255, 0.3);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(45deg, $grey-blue-color, $dark-red-color);
+  background: linear-gradient(
+    45deg,
+    var(--grey-blue-color),
+    var(--dark-red-color)
+  );
   border-radius: 10px;
 }
 
 #layoutContainer {
-  background-color: $background-color;
+  background-color: var(--bg-color);
 
   #header-container {
     max-height: $header-height;
@@ -93,7 +96,7 @@ body {
     padding: 20px 20px 0px 20px;
     top: 0;
     z-index: $header-z-index;
-    background-color: $background-color;
+    background-color: var(--bg-color);
   }
 
   #page-container {
@@ -101,7 +104,7 @@ body {
       var(--vh, 1vh) * 100 - #{$header-height} - #{$footer-height}
     );
     height: 100%;
-    background-color: $background-color;
+    background-color: var(--bg-color);
 
     .page-content {
       height: 100%;
@@ -120,13 +123,12 @@ body {
     left: 0;
     right: 0;
     z-index: $footer-z-index;
-    background-color: $background-color;
-    border-top: 1px solid rgba(0, 0, 0, 0.05);
-    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
+    background-color: var(--bg-color);
+    border-top: 1px solid var(--border-shadow-color);
+    box-shadow: 0 -2px 8px var(--footer-shadow-color);
   }
 }
 
-// Handle safe areas on modern devices
 @supports (padding: max(0px)) {
   #layoutContainer {
     #footer-container {
@@ -140,7 +142,6 @@ body {
   }
 }
 
-// Mobile optimizations
 @media screen and (max-width: $sm) {
   html {
     -webkit-text-size-adjust: 100%;

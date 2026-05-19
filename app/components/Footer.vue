@@ -12,7 +12,7 @@
         target="_blank">
         <Icon
           name="pl-icon:github-mark"
-          color="black"
+          color="var(--text-color)"
           size="30px"
           mode="svg"
           aria-hidden="true" />
@@ -38,7 +38,8 @@ const authorName = computed(() => t('about.author'))
   justify-content: space-between;
   align-items: center;
   padding: 0px 20px;
-  background-color: $footer-background-color;
+  background-color: var(--footer-bg);
+  color: var(--text-color);
 
   .github-link {
     width: 30px;

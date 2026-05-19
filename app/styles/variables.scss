@@ -1,40 +1,82 @@
-// colors
-$primary-text-color: #000000;
-$white-color: #FFFFFF;
-$red-color: #FF0000;
-$dark-red-color: #A00000;
-$green-color: #008000;
-$light-grey-color: #CBD5E0;
-$grey-color: #808080;
-$grey-color-2: #718096;
-$dark-grey-color: #4A5568;
-$light-blue-color: #63B3ED;
-$blue-color: #3B82F6;
-$blue-color-2: #2563EB;
-$grey-blue-color: #7A9FF0;
+// CSS Custom Properties for theming
+:root {
+  --bg-color: #FFFFFF;
+  --text-color: #000000;
+  --header-bg: #F5F5F5;
+  --footer-bg: #F5F5F5;
+  --card-border: #CBD5E0;
+  --drop-zone-border: #4A5568;
+  --scrollbar-track: #F1F1F1;
+  --scrollbar-border: #CACA;
+  --modal-bg: #FFFFFF;
+  --blue-color: #3B82F6;
+  --blue-color-2: #2563EB;
+  --red-color: #FF0000;
+  --dark-red-color: #A00000;
+  --green-color: #008000;
+  --grey-color: #808080;
+  --grey-color-2: #718096;
+  --dark-grey-color: #4A5568;
+  --light-grey-color: #CBD5E0;
+  --light-blue-color: #63B3ED;
+  --grey-blue-color: #7A9FF0;
+  --white-color: #FFFFFF;
+  --primary-text-color: #000000;
+  --btn-text-color: #FFFFFF;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --border-shadow-color: rgba(0, 0, 0, 0.05);
+  --footer-shadow-color: rgba(0, 0, 0, 0.08);
+  --shimmer-color: rgba(255, 255, 255, 0.55);
+  --lang-switcher-bg: rgba(255, 255, 255, 0.8);
+  --lang-switcher-border: rgba(122, 159, 240, 0.4);
+  --modal-backdrop: rgba(0, 0, 0, 0.6);
+}
 
+html.dark {
+  --bg-color: #121212;
+  --text-color: #E0E0E0;
+  --header-bg: #1E1E1E;
+  --footer-bg: #1E1E1E;
+  --card-border: #333333;
+  --drop-zone-border: #666666;
+  --scrollbar-track: #1E1E1E;
+  --scrollbar-border: #444444;
+  --modal-bg: #1E1E1E;
+  --blue-color: #5B9CF6;
+  --blue-color-2: #3B7DE6;
+  --red-color: #CC3333;
+  --dark-red-color: #CC3333;
+  --green-color: #4CAF50;
+  --grey-color: #AAAAAA;
+  --grey-color-2: #9E9E9E;
+  --dark-grey-color: #666666;
+  --light-grey-color: #333333;
+  --light-blue-color: #63B3ED;
+  --grey-blue-color: #7A9FF0;
+  --white-color: #FFFFFF;
+  --primary-text-color: #E0E0E0;
+  --btn-text-color: #FFFFFF;
+  --shadow-color: rgba(0, 0, 0, 0.4);
+  --border-shadow-color: rgba(255, 255, 255, 0.05);
+  --footer-shadow-color: rgba(0, 0, 0, 0.3);
+  --shimmer-color: rgba(255, 255, 255, 0.15);
+  --lang-switcher-bg: rgba(30, 30, 30, 0.8);
+  --lang-switcher-border: rgba(122, 159, 240, 0.4);
+  --modal-backdrop: rgba(0, 0, 0, 0.8);
+}
 
-// background-color
+// Legacy SCSS variables (kept for non-color uses and fallbacks)
 $background: linear-gradient(45deg, $grey-blue-color 0%, $dark-red-color 50%, $grey-blue-color 100%);
-$background-color: $white-color;
-$header-background-color: #F5F5F5;
-$footer-background-color: #F5F5F5;
-
-
-// border-color
 $drop-zone-border-color: $dark-grey-color;
-
 
 // z-index
 $header-z-index: 30;
 $footer-z-index: 30;
 $modal-z-index: 50;
 
-
 // height
 $header-height: 74px;
 $footer-height: 44px;
-
 
 // breakpoints
 $sm: 640px;

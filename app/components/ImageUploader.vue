@@ -284,7 +284,6 @@ async function downloadAllImages(): Promise<void> {
 
 async function downloadImage(item: ResultItem) {
   try {
-    // File System Access API
     if (hasShowSaveFilePicker(window)) {
       const handle = await window.showSaveFilePicker({
         suggestedName: item.name,
@@ -308,7 +307,6 @@ async function downloadImage(item: ResultItem) {
     }
   }
 
-  // Fallback for browsers without FS Access API
   downloadImageFallback(item)
 }
 
@@ -332,12 +330,13 @@ defineExpose({ previewItem })
     padding: 50px 0px;
     margin-bottom: 15px;
     text-align: center;
-    border: 2px dashed $drop-zone-border-color;
+    border: 2px dashed var(--drop-zone-border);
     border-radius: 8px;
     cursor: pointer;
+    color: var(--text-color);
 
     .supported-formats {
-      color: $blue-color;
+      color: var(--blue-color);
     }
 
     &:hover,
@@ -349,6 +348,7 @@ defineExpose({ previewItem })
   .webp-option-container {
     display: flex;
     margin-bottom: 15px;
+    color: var(--text-color);
 
     #webp-convert {
       cursor: pointer;
@@ -365,7 +365,7 @@ defineExpose({ previewItem })
 
     .progress-bar-container {
       height: 8px;
-      background: $light-grey-color;
+      background: var(--light-grey-color);
       border-radius: 4px;
       margin-bottom: 5px;
       position: relative;
@@ -380,7 +380,7 @@ defineExpose({ previewItem })
         background: linear-gradient(
           90deg,
           transparent,
-          rgba(255, 255, 255, 0.55),
+          var(--shimmer-color),
           transparent
         );
         animation: shimmer-progress 1.5s ease-in-out infinite;
@@ -389,10 +389,14 @@ defineExpose({ previewItem })
       .progress-bar {
         height: 100%;
         position: relative;
-        background: $blue-color;
+        background: var(--blue-color);
         border-radius: 4px;
         z-index: 1;
       }
+    }
+
+    .progress-text {
+      color: var(--text-color);
     }
   }
 
@@ -403,7 +407,7 @@ defineExpose({ previewItem })
       align-items: center;
       gap: 8px;
       padding: 8px;
-      border: 1px solid $light-grey-color;
+      border: 1px solid var(--card-border);
       border-radius: 4px;
       margin-bottom: 8px;
 
@@ -418,23 +422,24 @@ defineExpose({ previewItem })
         .item-name {
           font-weight: 500;
           overflow-wrap: break-word;
+          color: var(--text-color);
         }
 
         .item-size {
           font-size: 14px;
-          color: $grey-blue-color;
+          color: var(--grey-blue-color);
 
           &.reduction-good {
-            color: $green-color;
+            color: var(--green-color);
           }
 
           &.reduction-none {
-            color: $grey-color;
+            color: var(--grey-color);
           }
         }
 
         .unsupported-format {
-          color: $dark-red-color;
+          color: var(--dark-red-color);
         }
       }
 
@@ -453,40 +458,40 @@ defineExpose({ previewItem })
 
       .preview-button {
         padding: 4px 12px;
-        background-color: $dark-grey-color;
-        color: $white-color;
+        background-color: var(--dark-grey-color);
+        color: var(--btn-text-color);
         border: none;
         border-radius: 4px;
         cursor: pointer;
 
         &:hover {
-          background-color: $grey-color-2;
+          background-color: var(--grey-color-2);
         }
       }
 
       .download-button {
         padding: 4px 12px;
-        background-color: $blue-color;
-        color: $white-color;
+        background-color: var(--blue-color);
+        color: var(--btn-text-color);
         border: none;
         border-radius: 4px;
         cursor: pointer;
 
         &:hover {
-          background-color: $blue-color-2;
+          background-color: var(--blue-color-2);
         }
       }
 
       .delete-button {
         padding: 4px 12px;
-        background-color: $dark-red-color;
-        color: $white-color;
+        background-color: var(--dark-red-color);
+        color: var(--btn-text-color);
         border: none;
         border-radius: 4px;
         cursor: pointer;
 
         &:hover {
-          background-color: $red-color;
+          background-color: var(--red-color);
         }
       }
     }
@@ -500,27 +505,27 @@ defineExpose({ previewItem })
 
     .download-all-button {
       padding: 6px 14px;
-      background-color: $blue-color;
-      color: $white-color;
+      background-color: var(--blue-color);
+      color: var(--btn-text-color);
       border: none;
       border-radius: 4px;
       cursor: pointer;
 
       &:hover {
-        background-color: $blue-color-2;
+        background-color: var(--blue-color-2);
       }
     }
 
     .clear-all-button {
       padding: 6px 14px;
-      background-color: $dark-grey-color;
-      color: $white-color;
+      background-color: var(--dark-grey-color);
+      color: var(--btn-text-color);
       border: none;
       border-radius: 4px;
       cursor: pointer;
 
       &:hover {
-        background-color: $grey-color-2;
+        background-color: var(--grey-color-2);
       }
     }
   }

@@ -308,7 +308,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--modal-backdrop);
 
   .modal-content {
     width: 90vw;
@@ -316,16 +316,17 @@ onBeforeUnmount(() => {
     height: 90vh;
     display: flex;
     flex-direction: column;
-    background: $white-color;
+    background: var(--modal-bg);
     border-radius: 8px;
     overflow: hidden;
+    color: var(--text-color);
 
     .modal-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding: 12px 16px;
-      border-bottom: 1px solid $light-grey-color;
+      border-bottom: 1px solid var(--card-border);
       flex-shrink: 0;
 
       .modal-title {
@@ -338,15 +339,15 @@ onBeforeUnmount(() => {
 
       .close-button {
         padding: 4px 12px;
-        background-color: $dark-grey-color;
-        color: $white-color;
+        background-color: var(--dark-grey-color);
+        color: var(--btn-text-color);
         border: none;
         border-radius: 4px;
         cursor: pointer;
         flex-shrink: 0;
 
         &:hover {
-          background-color: $grey-color-2;
+          background-color: var(--grey-color-2);
         }
       }
     }
@@ -383,12 +384,12 @@ onBeforeUnmount(() => {
 
           .panel-dims {
             font-size: 14px;
-            color: $grey-blue-color;
+            color: var(--grey-blue-color);
           }
 
           .panel-size {
             font-size: 14px;
-            color: $grey-blue-color;
+            color: var(--grey-blue-color);
           }
         }
 
@@ -399,7 +400,7 @@ onBeforeUnmount(() => {
           display: flex;
           align-items: center;
           justify-content: center;
-          border: 1px solid $light-grey-color;
+          border: 1px solid var(--card-border);
           border-radius: 4px;
           overscroll-behavior: contain;
 
@@ -425,8 +426,8 @@ onBeforeUnmount(() => {
         .zoom-button {
           margin-top: 8px;
           padding: 4px 12px;
-          background-color: $blue-color;
-          color: $white-color;
+          background-color: var(--blue-color);
+          color: var(--btn-text-color);
           border: none;
           border-radius: 4px;
           cursor: pointer;
@@ -434,7 +435,7 @@ onBeforeUnmount(() => {
           flex-shrink: 0;
 
           &:hover {
-            background-color: $blue-color-2;
+            background-color: var(--blue-color-2);
           }
         }
       }

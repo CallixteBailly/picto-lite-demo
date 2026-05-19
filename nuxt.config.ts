@@ -53,6 +53,11 @@ export default defineNuxtConfig({
     '@nuxt/test-utils/module',
     '@nuxt/eslint',
   ],
+  colorMode: {
+    classSuffix: false,
+    preference: 'system',
+    fallback: 'light',
+  },
   imports: {
     dirs: [],
   },
