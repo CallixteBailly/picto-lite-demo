@@ -8,79 +8,84 @@
             {{ t('components.image_preview_modal.close_label') }}
           </button>
         </div>
+        <div class="info-bar">
+          <div class="info-side info-original">
+            <span class="info-label">
+              {{ t('components.image_preview_modal.original_label') }}
+            </span>
+            <span v-if="originalDimensions" class="info-dims">
+              {{ formatDimensions(originalDimensions) }}
+            </span>
+            <span class="info-size">
+              {{ formatSize(item.originalSize) }}
+            </span>
+          </div>
+          <div class="info-separator" />
+          <div class="info-side info-optimized">
+            <span class="info-label">
+              {{ t('components.image_preview_modal.optimized_label') }}
+            </span>
+            <span v-if="optimizedDimensions" class="info-dims">
+              {{ formatDimensions(optimizedDimensions) }}
+            </span>
+            <span class="info-size">
+              {{ formatSize(item.optimizedSize) }}
+            </span>
+          </div>
+        </div>
         <div class="modal-body">
-          <div class="preview-panel">
-            <div class="panel-header">
-              <span class="panel-label">
-                {{ t('components.image_preview_modal.original_label') }}
-              </span>
-              <span v-if="originalDimensions" class="panel-dims">
-                {{ formatDimensions(originalDimensions) }}
-              </span>
-              <span class="panel-size">
-                {{ formatSize(item.originalSize) }}
-              </span>
-            </div>
+          <div
+            ref="comparisonContainerRef"
+            class="comparison-container"
+            :class="{ zoomed: isZoomed }">
+            <img
+              ref="optimizedImgRef"
+              class="image-layer-optimized"
+              :src="optimizedUrl"
+              :alt="t('components.image_preview_modal.optimized_label')"
+              draggable="false"
+              @load="onImageLoad" />
             <div
-              ref="originalContainerRef"
-              class="image-container"
-              :class="{ zoomed: originalZoomed }">
+              class="image-layer-original"
+              :style="{ clipPath: originalClipPath }">
               <img
                 ref="originalImgRef"
                 :src="originalUrl"
                 :alt="t('components.image_preview_modal.original_label')"
-                :style="{ cursor: originalCursor }"
                 draggable="false"
-                @load="onImageLoad('original')"
-                @click="onImageClick('original', $event)" />
-            </div>
-            <button
-              v-if="originalCanZoom"
-              class="zoom-button"
-              @click="toggleZoom('original')">
-              {{
-                originalZoomed
-                  ? t('components.image_preview_modal.zoom_out_label')
-                  : t('components.image_preview_modal.zoom_in_label')
-              }}
-            </button>
-          </div>
-          <div class="preview-panel">
-            <div class="panel-header">
-              <span class="panel-label">
-                {{ t('components.image_preview_modal.optimized_label') }}
-              </span>
-              <span v-if="optimizedDimensions" class="panel-dims">
-                {{ formatDimensions(optimizedDimensions) }}
-              </span>
-              <span class="panel-size">
-                {{ formatSize(item.optimizedSize) }}
-              </span>
+                @load="onImageLoad" />
             </div>
             <div
-              ref="optimizedContainerRef"
-              class="image-container"
-              :class="{ zoomed: optimizedZoomed }">
-              <img
-                ref="optimizedImgRef"
-                :src="optimizedUrl"
-                :alt="t('components.image_preview_modal.optimized_label')"
-                :style="{ cursor: optimizedCursor }"
-                draggable="false"
-                @load="onImageLoad('optimized')"
-                @click="onImageClick('optimized', $event)" />
+              class="slider-handle"
+              :style="{ left: sliderLeft }"
+              role="slider"
+              tabindex="0"
+              :aria-label="t('components.image_preview_modal.slider_hint')"
+              :aria-valuenow="ariaValueNow"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              @pointerdown="onPointerDown" />
+            <div
+              class="floating-label label-before"
+              :style="{ left: `calc(${sliderLeft} * 0.5)` }">
+              {{ t('components.image_preview_modal.original_short_label') }}
             </div>
-            <button
-              v-if="optimizedCanZoom"
-              class="zoom-button"
-              @click="toggleZoom('optimized')">
-              {{
-                optimizedZoomed
-                  ? t('components.image_preview_modal.zoom_out_label')
-                  : t('components.image_preview_modal.zoom_in_label')
-              }}
-            </button>
+            <div
+              class="floating-label label-after"
+              :style="{
+                left: `calc(${sliderLeft} + (100% - ${sliderLeft}) * 0.5)`,
+              }">
+              {{ t('components.image_preview_modal.optimized_short_label') }}
+            </div>
           </div>
+        </div>
+        <div class="button-bar">
+          <button v-if="canZoom" class="zoom-button" @click="toggleZoom">            {{
+              isZoomed
+                ? t('components.image_preview_modal.zoom_out_label')
+                : t('components.image_preview_modal.zoom_in_label')
+            }}
+          </button>
         </div>
       </div>
     </div>
@@ -89,8 +94,6 @@
 
 <script setup lang="ts">
 import type { ResultItem } from '~/types/result'
-
-type PanelId = 'original' | 'optimized'
 
 const props = defineProps<{
   item: ResultItem
@@ -102,11 +105,11 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const originalZoomed = ref(false)
-const optimizedZoomed = ref(false)
-
-const originalCanZoom = ref(true)
-const optimizedCanZoom = ref(true)
+const sliderPosition = ref(0)
+const isDragging = ref(false)
+const isZoomed = ref(false)
+const canZoom = ref(true)
+const entranceDone = ref(false)
 
 const originalDimensions = ref<{ width: number; height: number } | null>(null)
 const optimizedDimensions = ref<{ width: number; height: number } | null>(null)
@@ -114,47 +117,19 @@ const optimizedDimensions = ref<{ width: number; height: number } | null>(null)
 const originalUrl = ref('')
 const optimizedUrl = ref('')
 
-const originalContainerRef = ref<HTMLElement>()
-const optimizedContainerRef = ref<HTMLElement>()
+const comparisonContainerRef = ref<HTMLElement>()
 const originalImgRef = ref<HTMLImageElement>()
 const optimizedImgRef = ref<HTMLImageElement>()
 
-const panelState = {
-  original: {
-    zoomed: originalZoomed,
-    containerRef: originalContainerRef,
-    imgRef: originalImgRef,
-    canZoom: originalCanZoom,
-    dims: originalDimensions,
-  },
-  optimized: {
-    zoomed: optimizedZoomed,
-    containerRef: optimizedContainerRef,
-    imgRef: optimizedImgRef,
-    canZoom: optimizedCanZoom,
-    dims: optimizedDimensions,
-  },
-}
+const pendingClick = ref<{ relX: number; relY: number } | null>(null)
 
-const originalCursor = computed(() =>
-  originalZoomed.value
-    ? 'zoom-out'
-    : originalCanZoom.value
-      ? 'zoom-in'
-      : 'default'
-)
-const optimizedCursor = computed(() =>
-  optimizedZoomed.value
-    ? 'zoom-out'
-    : optimizedCanZoom.value
-      ? 'zoom-in'
-      : 'default'
+const originalClipPath = computed(
+  () => `inset(0 ${(1 - sliderPosition.value) * 100}% 0 0)`
 )
 
-const pendingClicks: Record<PanelId, { relX: number; relY: number } | null> = {
-  original: null,
-  optimized: null,
-}
+const sliderLeft = computed(() => `${sliderPosition.value * 100}%`)
+
+const ariaValueNow = computed(() => Math.round(sliderPosition.value * 100))
 
 function formatSize(bytes: number): string {
   return bytes > 1024 * 1024
@@ -166,136 +141,148 @@ function formatDimensions(dims: { width: number; height: number }): string {
   return `${dims.width} × ${dims.height}`
 }
 
-function imageNeedsZoom(img: HTMLImageElement): boolean {
-  return img.naturalWidth > 0 && img.offsetWidth < img.naturalWidth
+function onImageLoad(): void {
+  const origImg = originalImgRef.value
+  const optImg = optimizedImgRef.value
+
+  if (origImg && origImg.naturalWidth > 0) {
+    originalDimensions.value = {
+      width: origImg.naturalWidth,
+      height: origImg.naturalHeight,
+    }
+  }
+
+  if (optImg && optImg.naturalWidth > 0) {
+    optimizedDimensions.value = {
+      width: optImg.naturalWidth,
+      height: optImg.naturalHeight,
+    }
+  }
+
+  if (
+    optImg &&
+    optImg.naturalWidth > 0 &&
+    optImg.offsetWidth < optImg.naturalWidth
+  ) {
+    canZoom.value = true
+  } else {
+    canZoom.value = false
+  }
 }
 
-function onImageLoad(panel: PanelId): void {
-  const { imgRef, canZoom, dims } = panelState[panel]
-  const img = imgRef.value!
+function updateSliderPosition(clientX: number): void {
+  const container = comparisonContainerRef.value
+  if (!container) return
 
-  canZoom.value = imageNeedsZoom(img)
-  dims.value = { width: img.naturalWidth, height: img.naturalHeight }
+  const rect = container.getBoundingClientRect()
+  const x = clientX - rect.left
+  sliderPosition.value = Math.max(0.02, Math.min(0.98, x / rect.width))
 }
 
-function onKeydown(event: KeyboardEvent): void {
+function onPointerDown(event: PointerEvent): void {
+  isDragging.value = true
+  event.preventDefault()
+  updateSliderPosition(event.clientX)
+}
+
+function onPointerMove(event: PointerEvent): void {
+  if (!isDragging.value) return
+  updateSliderPosition(event.clientX)
+}
+
+function onPointerUp(): void {
+  isDragging.value = false
+}
+
+function onKeyDown(event: KeyboardEvent): void {
   if (event.key === 'Escape') {
     emit('close')
-  }
-}
-
-function onImageClick(panel: PanelId, event: MouseEvent): void {
-  const { zoomed, imgRef } = panelState[panel]
-
-  if (zoomed.value) {
-    zoomed.value = false
-
     return
   }
 
-  const img = imgRef.value!
-
-  if (img.naturalWidth > 0 && !imageNeedsZoom(img)) {
-    return
+  if (event.key === 'ArrowLeft') {
+    sliderPosition.value = Math.max(0.02, sliderPosition.value - 0.02)
+    event.preventDefault()
+  } else if (event.key === 'ArrowRight') {
+    sliderPosition.value = Math.min(0.98, sliderPosition.value + 0.02)
+    event.preventDefault()
   }
-
-  const rect = img.getBoundingClientRect()
-
-  if (rect.width > 0 && rect.height > 0) {
-    pendingClicks[panel] = {
-      relX: Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)),
-      relY: Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height)),
-    }
-  }
-
-  zoomed.value = true
 }
 
-function toggleZoom(panel: PanelId): void {
-  const { zoomed, imgRef } = panelState[panel]
+function onSliderKeyDown(event: KeyboardEvent): void {
+  if (event.key === 'ArrowLeft') {
+    sliderPosition.value = Math.max(0.02, sliderPosition.value - 0.02)
+    event.preventDefault()
+  } else if (event.key === 'ArrowRight') {
+    sliderPosition.value = Math.min(0.98, sliderPosition.value + 0.02)
+    event.preventDefault()
+  }
+}
 
-  if (!zoomed.value) {
-    const img = imgRef.value!
-
-    if (img.naturalWidth > 0 && !imageNeedsZoom(img)) {
+function toggleZoom(): void {
+  if (!isZoomed.value) {
+    const optImg = optimizedImgRef.value
+    if (optImg && optImg.naturalWidth > 0 && optImg.offsetWidth >= optImg.naturalWidth) {
       return
     }
   }
 
-  zoomed.value = !zoomed.value
+  isZoomed.value = !isZoomed.value
 }
 
-function scrollAfterZoomIn(
-  container: HTMLElement,
-  img: HTMLElement,
-  pendingClick: { relX: number; relY: number } | null
-): void {
-  if (pendingClick) {
-    container.scrollLeft = Math.max(
-      0,
-      pendingClick.relX * img.offsetWidth - container.clientWidth / 2
-    )
-    container.scrollTop = Math.max(
-      0,
-      pendingClick.relY * img.offsetHeight - container.clientHeight / 2
-    )
+function scrollAfterZoomIn(): void {
+  const container = comparisonContainerRef.value
+  if (!container) return
+
+  if (pendingClick.value) {
+    const img = container.querySelector('.image-layer-optimized') as HTMLElement
+    if (img) {
+      container.scrollLeft = Math.max(
+        0,
+        pendingClick.value.relX * img.offsetWidth - container.clientWidth / 2
+      )
+      container.scrollTop = Math.max(
+        0,
+        pendingClick.value.relY * img.offsetHeight - container.clientHeight / 2
+      )
+    }
+    pendingClick.value = null
   } else {
-    container.scrollLeft = Math.max(
-      0,
-      (img.offsetWidth - container.clientWidth) / 2
-    )
-    container.scrollTop = Math.max(
-      0,
-      (img.offsetHeight - container.clientHeight) / 2
-    )
+    const img = container.querySelector('.image-layer-optimized') as HTMLElement
+    if (img) {
+      container.scrollLeft = Math.max(
+        0,
+        (img.offsetWidth - container.clientWidth) / 2
+      )
+      container.scrollTop = Math.max(
+        0,
+        (img.offsetHeight - container.clientHeight) / 2
+      )
+    }
   }
 }
 
-watch(
-  originalZoomed,
-  isZoomed => {
-    if (!isZoomed) {
-      return
-    }
-
-    scrollAfterZoomIn(
-      originalContainerRef.value!,
-      originalImgRef.value!,
-      pendingClicks.original
-    )
-    pendingClicks.original = null
-  },
-  { flush: 'post' }
-)
-
-watch(
-  optimizedZoomed,
-  isZoomed => {
-    if (!isZoomed) {
-      return
-    }
-
-    scrollAfterZoomIn(
-      optimizedContainerRef.value!,
-      optimizedImgRef.value!,
-      pendingClicks.optimized
-    )
-    pendingClicks.optimized = null
-  },
-  { flush: 'post' }
-)
+watch(isZoomed, val => {
+  if (val) {
+    nextTick(() => scrollAfterZoomIn())
+  }
+}, { flush: 'post' })
 
 onMounted(() => {
   originalUrl.value = URL.createObjectURL(props.item.originalBlob)
   optimizedUrl.value = URL.createObjectURL(props.item.blob)
-  document.addEventListener('keydown', onKeydown)
+  document.addEventListener('keydown', onKeyDown)
+  document.addEventListener('pointermove', onPointerMove)
+  document.addEventListener('pointerup', onPointerUp)
   document.body.style.overflow = 'hidden'
 })
 
 onBeforeUnmount(() => {
   URL.revokeObjectURL(originalUrl.value)
   URL.revokeObjectURL(optimizedUrl.value)
-  document.removeEventListener('keydown', onKeydown)
+  document.removeEventListener('keydown', onKeyDown)
+  document.removeEventListener('pointermove', onPointerMove)
+  document.removeEventListener('pointerup', onPointerUp)
   document.body.style.overflow = ''
 })
 </script>
@@ -351,91 +338,199 @@ onBeforeUnmount(() => {
       }
     }
 
-    .modal-body {
-      min-height: 0;
+    .info-bar {
       display: flex;
-      flex: 1;
-      gap: 16px;
-      padding: 16px;
-      overflow: auto;
+      align-items: center;
+      padding: 8px 16px;
+      border-bottom: 1px solid $light-grey-color;
+      flex-shrink: 0;
+      gap: 12px;
+      font-size: 13px;
 
-      @media (max-width: $md) {
-        flex-direction: column;
+      .info-side {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+        min-width: 0;
+
+        &.info-original {
+          justify-content: flex-start;
+        }
+
+        &.info-optimized {
+          justify-content: flex-end;
+        }
       }
 
-      .preview-panel {
-        min-width: 0;
-        min-height: 0;
+      .info-label {
+        font-weight: 500;
+        flex-shrink: 0;
+      }
+
+      .info-dims {
+        color: $grey-blue-color;
+        flex-shrink: 0;
+      }
+
+      .info-size {
+        color: $grey-blue-color;
+        flex-shrink: 0;
+      }
+
+      .info-separator {
+        width: 1px;
+        height: 16px;
+        background: $light-grey-color;
+        flex-shrink: 0;
+      }
+    }
+
+    .modal-body {
+      min-height: 0;
+      flex: 1;
+      padding: 16px;
+      overflow: hidden;
+      display: flex;
+
+      .comparison-container {
+        position: relative;
         flex: 1;
+        overflow: auto;
         display: flex;
-        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid $light-grey-color;
+        border-radius: 4px;
+        overscroll-behavior: contain;
+        user-select: none;
 
-        .panel-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 8px;
+        .image-layer-optimized {
+          max-width: 100%;
+          max-height: 100%;
+          object-fit: contain;
           flex-shrink: 0;
-
-          .panel-label {
-            font-weight: 500;
-          }
-
-          .panel-dims {
-            font-size: 14px;
-            color: $grey-blue-color;
-          }
-
-          .panel-size {
-            font-size: 14px;
-            color: $grey-blue-color;
-          }
+          pointer-events: none;
         }
 
-        .image-container {
-          min-height: 200px;
-          flex: 1;
-          overflow: auto;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: 1px solid $light-grey-color;
-          border-radius: 4px;
-          overscroll-behavior: contain;
+        .image-layer-original {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
 
           img {
-            max-width: 100%;
-            max-height: 100%;
+            width: 100%;
+            height: 100%;
             object-fit: contain;
-            flex-shrink: 0;
-            user-select: none;
-          }
-
-          &.zoomed {
-            align-items: flex-start;
-            justify-content: flex-start;
-
-            img {
-              max-width: none;
-              max-height: none;
-            }
+            pointer-events: none;
           }
         }
 
-        .zoom-button {
-          margin-top: 8px;
-          padding: 4px 12px;
-          background-color: $blue-color;
-          color: $white-color;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-          align-self: center;
-          flex-shrink: 0;
+        .slider-handle {
+          position: absolute;
+          top: 0;
+          width: 4px;
+          height: 100%;
+          background: $white-color;
+          cursor: col-resize;
+          z-index: 10;
+          transform: translateX(-2px);
+          box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
 
-          &:hover {
-            background-color: $blue-color-2;
+          &::before {
+            content: '◀ ▶';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: $white-color;
+            border-radius: 50%;
+            font-size: 10px;
+            letter-spacing: -2px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            transition: transform 0.15s ease;
+            white-space: nowrap;
+            color: $dark-grey-color;
           }
+
+          &:hover::before {
+            transform: translate(-50%, -50%) scale(1.1);
+          }
+
+          &:active {
+            cursor: grabbing;
+          }
+
+          &:focus-visible {
+            outline: 2px solid $blue-color;
+            outline-offset: 2px;
+          }
+        }
+
+        .floating-label {
+          position: absolute;
+          top: 12px;
+          transform: translateX(-50%);
+          font-size: 13px;
+          color: $white-color;
+          background: rgba(0, 0, 0, 0.5);
+          border-radius: 4px;
+          padding: 2px 8px;
+          z-index: 5;
+          pointer-events: none;
+          white-space: nowrap;
+
+          @media (max-width: $md) {
+            font-size: 11px;
+          }
+        }
+
+        &.zoomed {
+          align-items: flex-start;
+          justify-content: flex-start;
+
+          .image-layer-optimized {
+            max-width: none;
+            max-height: none;
+          }
+
+          .image-layer-original {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+          }
+        }
+      }
+    }
+
+    .button-bar {
+      display: flex;
+      justify-content: center;
+      padding: 8px 16px;
+      border-top: 1px solid $light-grey-color;
+      flex-shrink: 0;
+
+      .zoom-button {
+        padding: 4px 12px;
+        background-color: $blue-color;
+        color: $white-color;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        flex-shrink: 0;
+
+        &:hover {
+          background-color: $blue-color-2;
         }
       }
     }

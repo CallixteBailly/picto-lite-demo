@@ -27,7 +27,10 @@
       "optimized_label": "Optimisé",
       "close_label": "Fermer",
       "zoom_in_label": "Zoomer",
-      "zoom_out_label": "Dézoomer"
+      "zoom_out_label": "Dézoomer",
+      "original_short_label": "Avant",
+      "optimized_short_label": "Après",
+      "slider_hint": "Glisser pour comparer"
     },
     "lang_switcher": {
       "change_language_label": "Changer de langue"
