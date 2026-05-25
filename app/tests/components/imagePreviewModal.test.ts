@@ -75,17 +75,15 @@ describe('ImagePreviewModal component', () => {
     )
   })
 
-  it('displays two preview panels with correct labels', async () => {
+  it('displays info bar with original and optimized labels', async () => {
     const item = createResultItem()
     wrapper = await mountSuspended(ImagePreviewModal, {
       props: { item },
       attachTo: document.body,
     })
 
-    const panels = document.querySelectorAll('.preview-panel')
-    expect(panels).toHaveLength(2)
-
-    const labels = document.querySelectorAll('.panel-label')
+    const labels = document.querySelectorAll('.info-label')
+    expect(labels).toHaveLength(2)
     expect(labels[0]?.textContent?.trim()).toBe(
       useNuxtApp().$i18n.t('components.image_preview_modal.original_label')
     )
@@ -94,127 +92,140 @@ describe('ImagePreviewModal component', () => {
     )
   })
 
-  it('displays correct sizes for both panels', async () => {
-    const item = createResultItem({
-      originalSize: 3_000,
-      optimizedSize: 1_500,
-    })
+  it('displays original and optimized sizes in info bar', async () => {
+    const item = createResultItem({ originalSize: 3_000, optimizedSize: 1_500 })
     wrapper = await mountSuspended(ImagePreviewModal, {
       props: { item },
       attachTo: document.body,
     })
 
-    const sizes = document.querySelectorAll('.panel-size')
-    expect(sizes[0]?.textContent).toBe('2.9 KB')
-    expect(sizes[1]?.textContent).toBe('1.5 KB')
+    const sizes = document.querySelectorAll('.info-size')
+    expect(sizes).toHaveLength(2)
+    expect(sizes[0]?.textContent?.trim()).toBe('2.9 KB')
+    expect(sizes[1]?.textContent?.trim()).toBe('1.5 KB')
   })
 
-  it('displays MB format for large files', async () => {
-    const item = createResultItem({
-      originalSize: 5_242_880,
-      optimizedSize: 2_621_440,
-    })
-    wrapper = await mountSuspended(ImagePreviewModal, {
-      props: { item },
-      attachTo: document.body,
-    })
-
-    const sizes = document.querySelectorAll('.panel-size')
-    expect(sizes[0]?.textContent).toBe('5.00 MB')
-    expect(sizes[1]?.textContent).toBe('2.50 MB')
-  })
-
-  it('does not show dimensions before image load', async () => {
+  it('shows dimensions after images load', async () => {
     const item = createResultItem()
     wrapper = await mountSuspended(ImagePreviewModal, {
       props: { item },
       attachTo: document.body,
     })
 
-    expect(document.querySelectorAll('.panel-dims')).toHaveLength(0)
-  })
+    const originalImg = document.querySelector<HTMLImageElement>(
+      '.image-layer-original img'
+    )
+    const optimizedImg =
+      document.querySelector<HTMLImageElement>('.image-layer-optimized')
 
-  it('shows image dimensions in panel headers after image load', async () => {
-    const item = createResultItem()
-    wrapper = await mountSuspended(ImagePreviewModal, {
-      props: { item },
-      attachTo: document.body,
-    })
+    expect(originalImg).not.toBeNull()
+    expect(optimizedImg).not.toBeNull()
 
-    const images = document.querySelectorAll(
-      '.image-container img'
-    ) as NodeListOf<HTMLImageElement>
-
-    Object.defineProperty(images[0]!, 'naturalWidth', {
+    Object.defineProperty(originalImg!, 'naturalWidth', {
       value: 1920,
       configurable: true,
     })
-    Object.defineProperty(images[0]!, 'naturalHeight', {
+    Object.defineProperty(originalImg!, 'naturalHeight', {
       value: 1080,
       configurable: true,
     })
-    images[0]!.dispatchEvent(new Event('load'))
-
-    Object.defineProperty(images[1]!, 'naturalWidth', {
-      value: 1280,
+    Object.defineProperty(optimizedImg!, 'naturalWidth', {
+      value: 1920,
       configurable: true,
     })
-    Object.defineProperty(images[1]!, 'naturalHeight', {
-      value: 720,
+    Object.defineProperty(optimizedImg!, 'naturalHeight', {
+      value: 1080,
       configurable: true,
     })
-    images[1]!.dispatchEvent(new Event('load'))
+    Object.defineProperty(optimizedImg!, 'offsetWidth', {
+      value: 800,
+      configurable: true,
+    })
 
+    originalImg?.dispatchEvent(new Event('load'))
+    optimizedImg?.dispatchEvent(new Event('load'))
     await waitForPromises()
 
-    const dims = document.querySelectorAll('.panel-dims')
+    const dims = document.querySelectorAll('.info-dims')
     expect(dims).toHaveLength(2)
     expect(dims[0]?.textContent?.trim()).toBe('1920 × 1080')
-    expect(dims[1]?.textContent?.trim()).toBe('1280 × 720')
+    expect(dims[1]?.textContent?.trim()).toBe('1920 × 1080')
   })
 
-  it('shows both images with correct alt text', async () => {
+  it('does not show dimensions before images load', async () => {
     const item = createResultItem()
     wrapper = await mountSuspended(ImagePreviewModal, {
       props: { item },
       attachTo: document.body,
     })
 
-    const images = document.querySelectorAll('.image-container img')
-    expect(images).toHaveLength(2)
+    const dims = document.querySelectorAll('.info-dims')
+    expect(dims).toHaveLength(0)
+  })
 
-    expect(images[0]?.getAttribute('alt')).toBe(
-      useNuxtApp().$i18n.t('components.image_preview_modal.original_label')
+  it('creates object URLs for original and optimized blobs on mount', async () => {
+    const item = createResultItem()
+    wrapper = await mountSuspended(ImagePreviewModal, {
+      props: { item },
+      attachTo: document.body,
+    })
+
+    expect(URL.createObjectURL).toHaveBeenCalledTimes(2)
+    expect(URL.createObjectURL).toHaveBeenCalledWith(item.originalBlob)
+    expect(URL.createObjectURL).toHaveBeenCalledWith(item.blob)
+  })
+
+  it('sets optimized and original image sources', async () => {
+    const item = createResultItem()
+    wrapper = await mountSuspended(ImagePreviewModal, {
+      props: { item },
+      attachTo: document.body,
+    })
+
+    const optimizedImg =
+      document.querySelector<HTMLImageElement>('.image-layer-optimized')
+    const originalImg = document.querySelector<HTMLImageElement>(
+      '.image-layer-original img'
     )
-    expect(images[1]?.getAttribute('alt')).toBe(
+
+    expect(optimizedImg?.src).toBe('blob:fake-url')
+    expect(originalImg?.src).toBe('blob:fake-url')
+  })
+
+  it('sets correct alt text on images', async () => {
+    const item = createResultItem()
+    wrapper = await mountSuspended(ImagePreviewModal, {
+      props: { item },
+      attachTo: document.body,
+    })
+
+    const optimizedImg =
+      document.querySelector<HTMLImageElement>('.image-layer-optimized')
+    const originalImg = document.querySelector<HTMLImageElement>(
+      '.image-layer-original img'
+    )
+
+    expect(optimizedImg?.alt).toBe(
       useNuxtApp().$i18n.t('components.image_preview_modal.optimized_label')
     )
-  })
-
-  it('calls URL.createObjectURL for both blobs on mount', async () => {
-    const item = createResultItem()
-    wrapper = await mountSuspended(ImagePreviewModal, {
-      props: { item },
-      attachTo: document.body,
-    })
-
-    expect(globalThis.URL.createObjectURL).toHaveBeenCalledTimes(2)
-    expect(globalThis.URL.createObjectURL).toHaveBeenCalledWith(
-      item.originalBlob
+    expect(originalImg?.alt).toBe(
+      useNuxtApp().$i18n.t('components.image_preview_modal.original_label')
     )
-    expect(globalThis.URL.createObjectURL).toHaveBeenCalledWith(item.blob)
   })
 
-  it('calls URL.revokeObjectURL on unmount', async () => {
+  it('revokes object URLs on unmount', async () => {
     const item = createResultItem()
     wrapper = await mountSuspended(ImagePreviewModal, {
       props: { item },
       attachTo: document.body,
     })
+
+    const revokeCalls = (URL.revokeObjectURL as ReturnType<typeof vi.fn>).mock.calls.length
+    expect(revokeCalls).toBe(0)
 
     wrapper.unmount()
 
-    expect(globalThis.URL.revokeObjectURL).toHaveBeenCalledTimes(2)
+    expect(URL.revokeObjectURL).toHaveBeenCalledTimes(2)
   })
 
   it('sets body overflow to hidden on mount', async () => {
@@ -248,12 +259,12 @@ describe('ImagePreviewModal component', () => {
       attachTo: document.body,
     })
 
-    const closeButton = document.querySelector('.close-button') as HTMLElement
+    const closeButton = document.querySelector('.close-button') as HTMLButtonElement
     closeButton.click()
-
     await waitForPromises()
 
-    expect(wrapper.emitted('close')).toHaveLength(1)
+    expect(wrapper.emitted('close')).toBeTruthy()
+    expect(wrapper.emitted('close')!.length).toBe(1)
   })
 
   it('emits close when backdrop is clicked', async () => {
@@ -265,10 +276,9 @@ describe('ImagePreviewModal component', () => {
 
     const backdrop = document.querySelector('.modal-backdrop') as HTMLElement
     backdrop.click()
-
     await waitForPromises()
 
-    expect(wrapper.emitted('close')).toHaveLength(1)
+    expect(wrapper.emitted('close')).toBeTruthy()
   })
 
   it('does not emit close when modal content is clicked', async () => {
@@ -280,13 +290,12 @@ describe('ImagePreviewModal component', () => {
 
     const content = document.querySelector('.modal-content') as HTMLElement
     content.click()
-
     await waitForPromises()
 
-    expect(wrapper.emitted('close')).toBeUndefined()
+    expect(wrapper.emitted('close')).toBeFalsy()
   })
 
-  it('emits close when Escape key is pressed', async () => {
+  it('emits close on Escape key', async () => {
     const item = createResultItem()
     wrapper = await mountSuspended(ImagePreviewModal, {
       props: { item },
@@ -294,509 +303,291 @@ describe('ImagePreviewModal component', () => {
     })
 
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
-
     await waitForPromises()
 
-    expect(wrapper.emitted('close')).toHaveLength(1)
+    expect(wrapper.emitted('close')).toBeTruthy()
   })
 
-  it('does not emit close for non-Escape keys', async () => {
+  it('renders the comparison container with both image layers', async () => {
     const item = createResultItem()
     wrapper = await mountSuspended(ImagePreviewModal, {
       props: { item },
       attachTo: document.body,
     })
 
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
+    const container = document.querySelector('.comparison-container')
+    expect(container).not.toBeNull()
 
-    await waitForPromises()
-
-    expect(wrapper.emitted('close')).toBeUndefined()
+    const optimizedLayer =
+      document.querySelector('.image-layer-optimized')
+    const originalLayer =
+      document.querySelector('.image-layer-original')
+    expect(optimizedLayer).not.toBeNull()
+    expect(originalLayer).not.toBeNull()
   })
 
-  it('removes keydown listener on unmount', async () => {
+  it('renders the slider handle with correct aria attributes', async () => {
     const item = createResultItem()
-    const removeListenerSpy = vi.spyOn(document, 'removeEventListener')
-
     wrapper = await mountSuspended(ImagePreviewModal, {
       props: { item },
       attachTo: document.body,
     })
 
-    wrapper.unmount()
-
-    expect(removeListenerSpy).toHaveBeenCalledWith(
-      'keydown',
-      expect.any(Function)
+    const handle = document.querySelector('.slider-handle') as HTMLElement
+    expect(handle).not.toBeNull()
+    expect(handle.getAttribute('role')).toBe('slider')
+    expect(handle.getAttribute('tabindex')).toBe('0')
+    expect(handle.getAttribute('aria-valuemin')).toBe('0')
+    expect(handle.getAttribute('aria-valuemax')).toBe('100')
+    expect(handle.getAttribute('aria-label')).toBe(
+      useNuxtApp().$i18n.t('components.image_preview_modal.slider_hint')
     )
-
-    removeListenerSpy.mockRestore()
   })
 
-  it('shows zoom-in label by default for both panels', async () => {
+  it('renders floating labels for before and after', async () => {
     const item = createResultItem()
     wrapper = await mountSuspended(ImagePreviewModal, {
       props: { item },
       attachTo: document.body,
     })
 
-    const zoomButtons = document.querySelectorAll('.zoom-button')
-    expect(zoomButtons).toHaveLength(2)
-
-    const zoomInLabel = useNuxtApp().$i18n.t(
-      'components.image_preview_modal.zoom_in_label'
+    const labelBefore = document.querySelector('.label-before')
+    const labelAfter = document.querySelector('.label-after')
+    expect(labelBefore).not.toBeNull()
+    expect(labelAfter).not.toBeNull()
+    expect(labelBefore?.textContent?.trim()).toBe(
+      useNuxtApp().$i18n.t(
+        'components.image_preview_modal.original_short_label'
+      )
     )
-    expect(zoomButtons[0]?.textContent?.trim()).toBe(zoomInLabel)
-    expect(zoomButtons[1]?.textContent?.trim()).toBe(zoomInLabel)
-  })
-
-  it('toggles zoom on original image when zoom button is clicked', async () => {
-    const item = createResultItem()
-    wrapper = await mountSuspended(ImagePreviewModal, {
-      props: { item },
-      attachTo: document.body,
-    })
-
-    const containers = document.querySelectorAll('.image-container')
-    const zoomButtons = document.querySelectorAll('.zoom-button')
-
-    expect(containers[0]?.classList.contains('zoomed')).toBe(false)
-    ;(zoomButtons[0] as HTMLElement).click()
-
-    await waitForPromises()
-
-    expect(containers[0]?.classList.contains('zoomed')).toBe(true)
-    expect(zoomButtons[0]?.textContent?.trim()).toBe(
-      useNuxtApp().$i18n.t('components.image_preview_modal.zoom_out_label')
+    expect(labelAfter?.textContent?.trim()).toBe(
+      useNuxtApp().$i18n.t(
+        'components.image_preview_modal.optimized_short_label'
+      )
     )
-
-    // Second panel should remain unzoomed
-    expect(containers[1]?.classList.contains('zoomed')).toBe(false)
   })
 
-  it('toggles zoom on optimized image when zoom button is clicked', async () => {
+  it('moves slider on pointer drag', async () => {
     const item = createResultItem()
     wrapper = await mountSuspended(ImagePreviewModal, {
       props: { item },
       attachTo: document.body,
     })
 
-    const containers = document.querySelectorAll('.image-container')
-    const zoomButtons = document.querySelectorAll('.zoom-button')
+    const container = document.querySelector(
+      '.comparison-container'
+    ) as HTMLElement
+    const handle = document.querySelector('.slider-handle') as HTMLElement
 
-    expect(containers[1]?.classList.contains('zoomed')).toBe(false)
-    ;(zoomButtons[1] as HTMLElement).click()
+    vi.spyOn(container, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 1000,
+      height: 600,
+      right: 1000,
+      bottom: 600,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
+    })
 
-    await waitForPromises()
-
-    expect(containers[1]?.classList.contains('zoomed')).toBe(true)
-    expect(zoomButtons[1]?.textContent?.trim()).toBe(
-      useNuxtApp().$i18n.t('components.image_preview_modal.zoom_out_label')
+    handle.dispatchEvent(
+      new PointerEvent('pointerdown', { clientX: 500, cancelable: true })
     )
+    document.dispatchEvent(
+      new PointerEvent('pointermove', { clientX: 700 })
+    )
+    document.dispatchEvent(new PointerEvent('pointerup'))
+    await waitForPromises()
 
-    // First panel should remain unzoomed
-    expect(containers[0]?.classList.contains('zoomed')).toBe(false)
+    expect(handle.style.left).toBe('70%')
   })
 
-  it('toggles zoom on original image when image is clicked', async () => {
+  it('moves slider with arrow keys', async () => {
     const item = createResultItem()
     wrapper = await mountSuspended(ImagePreviewModal, {
       props: { item },
       attachTo: document.body,
     })
 
-    const containers = document.querySelectorAll('.image-container')
-    const images = document.querySelectorAll(
-      '.image-container img'
-    ) as NodeListOf<HTMLElement>
+    const handle = document.querySelector('.slider-handle') as HTMLElement
 
-    expect(containers[0]?.classList.contains('zoomed')).toBe(false)
-
-    images[0]!.click()
-
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowRight' })
+    )
     await waitForPromises()
 
-    expect(containers[0]?.classList.contains('zoomed')).toBe(true)
+    expect(handle.style.left).toBe('2%')
+
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowLeft' })
+    )
+    await waitForPromises()
+
+    expect(handle.style.left).toBe('2%')
   })
 
-  it('toggles zoom on optimized image when image is clicked', async () => {
+  it('shows zoom button when image can be zoomed', async () => {
     const item = createResultItem()
     wrapper = await mountSuspended(ImagePreviewModal, {
       props: { item },
       attachTo: document.body,
     })
 
-    const containers = document.querySelectorAll('.image-container')
-    const images = document.querySelectorAll(
-      '.image-container img'
-    ) as NodeListOf<HTMLElement>
+    const optimizedImg =
+      document.querySelector<HTMLImageElement>('.image-layer-optimized')
 
-    expect(containers[1]?.classList.contains('zoomed')).toBe(false)
-
-    images[1]!.click()
-
-    await waitForPromises()
-
-    expect(containers[1]?.classList.contains('zoomed')).toBe(true)
-  })
-
-  it('toggles zoom back to unzoomed on double click', async () => {
-    const item = createResultItem()
-    wrapper = await mountSuspended(ImagePreviewModal, {
-      props: { item },
-      attachTo: document.body,
+    Object.defineProperty(optimizedImg!, 'naturalWidth', {
+      value: 1920,
+      configurable: true,
+    })
+    Object.defineProperty(optimizedImg!, 'offsetWidth', {
+      value: 800,
+      configurable: true,
     })
 
-    const containers = document.querySelectorAll('.image-container')
-    const zoomButtons = document.querySelectorAll('.zoom-button')
-
-    ;(zoomButtons[0] as HTMLElement).click()
-
+    optimizedImg?.dispatchEvent(new Event('load'))
     await waitForPromises()
 
-    expect(containers[0]?.classList.contains('zoomed')).toBe(true)
-    ;(zoomButtons[0] as HTMLElement).click()
-
-    await waitForPromises()
-
-    expect(containers[0]?.classList.contains('zoomed')).toBe(false)
-
-    expect(zoomButtons[0]?.textContent?.trim()).toBe(
+    const zoomButton = document.querySelector('.zoom-button')
+    expect(zoomButton).not.toBeNull()
+    expect(zoomButton?.textContent?.trim()).toBe(
       useNuxtApp().$i18n.t('components.image_preview_modal.zoom_in_label')
     )
   })
 
-  it('zooms out when clicking a zoomed original image', async () => {
+  it('hides zoom button when image cannot be zoomed', async () => {
     const item = createResultItem()
     wrapper = await mountSuspended(ImagePreviewModal, {
       props: { item },
       attachTo: document.body,
     })
 
-    const containers = document.querySelectorAll('.image-container')
-    const zoomButtons = document.querySelectorAll('.zoom-button')
+    const optimizedImg =
+      document.querySelector<HTMLImageElement>('.image-layer-optimized')
 
-    ;(zoomButtons[0] as HTMLElement).click()
+    Object.defineProperty(optimizedImg!, 'naturalWidth', {
+      value: 100,
+      configurable: true,
+    })
+    Object.defineProperty(optimizedImg!, 'offsetWidth', {
+      value: 800,
+      configurable: true,
+    })
 
+    optimizedImg?.dispatchEvent(new Event('load'))
     await waitForPromises()
 
-    expect(containers[0]?.classList.contains('zoomed')).toBe(true)
-
-    const images = document.querySelectorAll(
-      '.image-container img'
-    ) as NodeListOf<HTMLElement>
-    images[0]!.click()
-
-    await waitForPromises()
-
-    expect(containers[0]?.classList.contains('zoomed')).toBe(false)
+    const zoomButton = document.querySelector('.zoom-button')
+    expect(zoomButton).toBeNull()
   })
 
-  it('zooms optimized panel in then back out', async () => {
+  it('toggles zoom on zoom button click', async () => {
     const item = createResultItem()
     wrapper = await mountSuspended(ImagePreviewModal, {
       props: { item },
       attachTo: document.body,
     })
 
-    const containers = document.querySelectorAll('.image-container')
-    const zoomButtons = document.querySelectorAll('.zoom-button')
+    const optimizedImg =
+      document.querySelector<HTMLImageElement>('.image-layer-optimized')
 
-    ;(zoomButtons[1] as HTMLElement).click()
+    Object.defineProperty(optimizedImg!, 'naturalWidth', {
+      value: 1920,
+      configurable: true,
+    })
+    Object.defineProperty(optimizedImg!, 'offsetWidth', {
+      value: 800,
+      configurable: true,
+    })
 
+    optimizedImg?.dispatchEvent(new Event('load'))
     await waitForPromises()
 
-    expect(containers[1]?.classList.contains('zoomed')).toBe(true)
-    ;(zoomButtons[1] as HTMLElement).click()
+    const container = document.querySelector('.comparison-container')!
+    expect(container.classList.contains('zoomed')).toBe(false)
 
+    const zoomButton = document.querySelector('.zoom-button') as HTMLButtonElement
+    zoomButton.click()
     await waitForPromises()
 
-    expect(containers[1]?.classList.contains('zoomed')).toBe(false)
+    expect(container.classList.contains('zoomed')).toBe(true)
+
+    zoomButton.click()
+    await waitForPromises()
+
+    expect(container.classList.contains('zoomed')).toBe(false)
   })
 
-  it('scrolls to click position when zooming in via image click', async () => {
+  it('removes document event listeners on unmount', async () => {
     const item = createResultItem()
     wrapper = await mountSuspended(ImagePreviewModal, {
       props: { item },
       attachTo: document.body,
     })
 
-    const containers = document.querySelectorAll('.image-container')
-    const images = document.querySelectorAll(
-      '.image-container img'
-    ) as NodeListOf<HTMLElement>
+    const removeSpy = vi.spyOn(document, 'removeEventListener')
+    wrapper.unmount()
 
-    vi.spyOn(images[0]!, 'getBoundingClientRect').mockReturnValue({
-      left: 100,
-      top: 50,
-      width: 400,
-      height: 300,
-      right: 500,
-      bottom: 350,
-      x: 100,
-      y: 50,
-      toJSON: () => ({}),
-    })
+    expect(removeSpy).toHaveBeenCalledWith('keydown', expect.any(Function))
+    expect(removeSpy).toHaveBeenCalledWith('pointermove', expect.any(Function))
+    expect(removeSpy).toHaveBeenCalledWith('pointerup', expect.any(Function))
 
-    Object.defineProperty(images[0]!, 'naturalWidth', {
-      value: 3000,
-      configurable: true,
-    })
-    Object.defineProperty(images[0]!, 'naturalHeight', {
-      value: 2000,
-      configurable: true,
-    })
-    Object.defineProperty(images[0]!, 'offsetWidth', {
-      value: 2000,
-      configurable: true,
-    })
-    Object.defineProperty(images[0]!, 'offsetHeight', {
-      value: 1500,
-      configurable: true,
-    })
-    Object.defineProperty(containers[0]!, 'clientWidth', {
-      value: 400,
-      configurable: true,
-    })
-    Object.defineProperty(containers[0]!, 'clientHeight', {
-      value: 300,
-      configurable: true,
-    })
-
-    // Click at center of image (clientX=300, clientY=200 → relX=0.5, relY=0.5)
-    const clickEvent = new MouseEvent('click', {
-      clientX: 300,
-      clientY: 200,
-      bubbles: true,
-    })
-
-    images[0]!.dispatchEvent(clickEvent)
-
-    await waitForPromises()
-
-    expect(containers[0]?.classList.contains('zoomed')).toBe(true)
-    // scrollLeft = 0.5 * 2000 - 400/2 = 800
-    // scrollTop = 0.5 * 1500 - 300/2 = 600
-    expect(containers[0]!.scrollLeft).toBe(800)
-    expect(containers[0]!.scrollTop).toBe(600)
+    removeSpy.mockRestore()
   })
 
-  it('has correct modal structure', async () => {
+  it('formats large sizes in MB', async () => {
+    const item = createResultItem({
+      originalSize: 2_000_000,
+      optimizedSize: 500_000,
+    })
+    wrapper = await mountSuspended(ImagePreviewModal, {
+      props: { item },
+      attachTo: document.body,
+    })
+
+    const sizes = document.querySelectorAll('.info-size')
+    expect(sizes[0]?.textContent?.trim()).toBe('1.91 MB')
+    expect(sizes[1]?.textContent?.trim()).toBe('0.48 MB')
+  })
+
+  it('applies clip-path to original image layer based on slider position', async () => {
     const item = createResultItem()
     wrapper = await mountSuspended(ImagePreviewModal, {
       props: { item },
       attachTo: document.body,
     })
 
-    const backdrop = document.querySelector('.modal-backdrop')
-    expect(backdrop).not.toBeNull()
+    const container = document.querySelector(
+      '.comparison-container'
+    ) as HTMLElement
+    const handle = document.querySelector('.slider-handle') as HTMLElement
 
-    const content = backdrop?.querySelector('.modal-content')
-    expect(content).not.toBeNull()
-    expect(content?.children).toHaveLength(2)
-
-    const [header, body] = Array.from(content!.children)
-
-    expect(header?.className).toBe('modal-header')
-    expect(header?.children).toHaveLength(2)
-
-    const [title, closeBtn] = Array.from(header!.children)
-    expect(title?.className).toBe('modal-title')
-    expect(closeBtn?.className).toBe('close-button')
-
-    expect(body?.className).toBe('modal-body')
-    expect(body?.children).toHaveLength(2)
-
-    const [panel1, panel2] = Array.from(body!.children)
-    expect(panel1?.className).toBe('preview-panel')
-    expect(panel2?.className).toBe('preview-panel')
-
-    // Each panel has: panel-header, image-container, zoom-button
-    expect(panel1?.children).toHaveLength(3)
-    expect(panel2?.children).toHaveLength(3)
-  })
-
-  it('shows zoom button and zoom-in cursor after loading a large image', async () => {
-    wrapper = await mountSuspended(ImagePreviewModal, {
-      props: { item: createResultItem() },
-      attachTo: document.body,
+    vi.spyOn(container, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 1000,
+      height: 600,
+      right: 1000,
+      bottom: 600,
+      x: 0,
+      y: 0,
+      toJSON: () => {},
     })
 
-    const images = document.querySelectorAll(
-      '.image-container img'
-    ) as NodeListOf<HTMLImageElement>
+    const originalLayer = document.querySelector(
+      '.image-layer-original'
+    ) as HTMLElement
 
-    Object.defineProperty(images[0]!, 'naturalWidth', {
-      value: 300,
-      configurable: true,
-    })
-    Object.defineProperty(images[0]!, 'offsetWidth', {
-      value: 150,
-      configurable: true,
-    })
+    const initialClipPath = originalLayer.style.clipPath
+    expect(initialClipPath).toContain('inset(0')
 
-    images[0]!.dispatchEvent(new Event('load'))
-
+    handle.dispatchEvent(
+      new PointerEvent('pointerdown', { clientX: 250, cancelable: true })
+    )
     await waitForPromises()
 
-    const panels = document.querySelectorAll('.preview-panel')
-    expect(panels[0]!.querySelector('.zoom-button')).not.toBeNull()
-    expect(images[0]!.style.cursor).toBe('zoom-in')
-  })
-
-  it('hides zoom button and sets default cursor after loading a small image', async () => {
-    wrapper = await mountSuspended(ImagePreviewModal, {
-      props: { item: createResultItem() },
-      attachTo: document.body,
-    })
-
-    const images = document.querySelectorAll(
-      '.image-container img'
-    ) as NodeListOf<HTMLImageElement>
-
-    Object.defineProperty(images[0]!, 'naturalWidth', {
-      value: 100,
-      configurable: true,
-    })
-    Object.defineProperty(images[0]!, 'offsetWidth', {
-      value: 100,
-      configurable: true,
-    })
-
-    images[0]!.dispatchEvent(new Event('load'))
-
-    await waitForPromises()
-
-    const panels = document.querySelectorAll('.preview-panel')
-    expect(panels[0]!.querySelector('.zoom-button')).toBeNull()
-    expect(images[0]!.style.cursor).toBe('default')
-  })
-
-  it('hides zoom button on optimized panel after loading a small optimized image', async () => {
-    wrapper = await mountSuspended(ImagePreviewModal, {
-      props: { item: createResultItem() },
-      attachTo: document.body,
-    })
-
-    const images = document.querySelectorAll(
-      '.image-container img'
-    ) as NodeListOf<HTMLImageElement>
-
-    Object.defineProperty(images[1]!, 'naturalWidth', {
-      value: 100,
-      configurable: true,
-    })
-    Object.defineProperty(images[1]!, 'offsetWidth', {
-      value: 100,
-      configurable: true,
-    })
-
-    images[1]!.dispatchEvent(new Event('load'))
-
-    await waitForPromises()
-
-    const panels = document.querySelectorAll('.preview-panel')
-    expect(panels[1]!.querySelector('.zoom-button')).toBeNull()
-    expect(images[1]!.style.cursor).toBe('default')
-  })
-
-  it('treats image as non-zoomable when load fires with naturalWidth of 0', async () => {
-    wrapper = await mountSuspended(ImagePreviewModal, {
-      props: { item: createResultItem() },
-      attachTo: document.body,
-    })
-
-    const images = document.querySelectorAll(
-      '.image-container img'
-    ) as NodeListOf<HTMLImageElement>
-
-    // naturalWidth defaults to 0 (not mocked) — image did not load correctly
-    images[0]!.dispatchEvent(new Event('load'))
-
-    await waitForPromises()
-
-    const panels = document.querySelectorAll('.preview-panel')
-    expect(panels[0]!.querySelector('.zoom-button')).toBeNull()
-  })
-
-  it('zooms in via button when image is large (zoom guard allows it)', async () => {
-    wrapper = await mountSuspended(ImagePreviewModal, {
-      props: { item: createResultItem() },
-      attachTo: document.body,
-    })
-
-    const containers = document.querySelectorAll('.image-container')
-    const zoomButtons = document.querySelectorAll('.zoom-button')
-    const images = document.querySelectorAll(
-      '.image-container img'
-    ) as NodeListOf<HTMLImageElement>
-
-    Object.defineProperty(images[0]!, 'naturalWidth', {
-      value: 300,
-      configurable: true,
-    })
-    Object.defineProperty(images[0]!, 'offsetWidth', {
-      value: 150,
-      configurable: true,
-    })
-    ;(zoomButtons[0] as HTMLElement).click()
-
-    await waitForPromises()
-
-    expect(containers[0]?.classList.contains('zoomed')).toBe(true)
-  })
-
-  it('does not zoom image on click if image is already at its natural size', async () => {
-    wrapper = await mountSuspended(ImagePreviewModal, {
-      props: { item: createResultItem() },
-      attachTo: document.body,
-    })
-
-    const containers = document.querySelectorAll('.image-container')
-    const images = document.querySelectorAll(
-      '.image-container img'
-    ) as NodeListOf<HTMLImageElement>
-
-    Object.defineProperty(images[0]!, 'naturalWidth', {
-      value: 100,
-      configurable: true,
-    })
-    Object.defineProperty(images[0]!, 'offsetWidth', {
-      value: 100,
-      configurable: true,
-    })
-
-    images[0]!.click()
-
-    await waitForPromises()
-
-    expect(containers[0]?.classList.contains('zoomed')).toBe(false)
-  })
-
-  it('does not zoom via button if image is already at its natural size', async () => {
-    wrapper = await mountSuspended(ImagePreviewModal, {
-      props: { item: createResultItem() },
-      attachTo: document.body,
-    })
-
-    const containers = document.querySelectorAll('.image-container')
-    const zoomButtons = document.querySelectorAll('.zoom-button')
-    const images = document.querySelectorAll(
-      '.image-container img'
-    ) as NodeListOf<HTMLImageElement>
-
-    Object.defineProperty(images[0]!, 'naturalWidth', {
-      value: 100,
-      configurable: true,
-    })
-    Object.defineProperty(images[0]!, 'offsetWidth', {
-      value: 100,
-      configurable: true,
-    })
-    ;(zoomButtons[0] as HTMLElement).click()
-
-    await waitForPromises()
-
-    expect(containers[0]?.classList.contains('zoomed')).toBe(false)
+    const updatedClipPath = originalLayer.style.clipPath
+    expect(updatedClipPath).toContain('inset(0 75% 0 0)')
   })
 })
