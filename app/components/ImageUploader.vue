@@ -60,6 +60,10 @@
           <div :class="['item-size', reductionClass(item)]">
             {{ formatImageReductionWording(item) }}
           </div>
+          <ReductionGauge
+            v-if="item.success"
+            :percent="reductionPercent(item)"
+            :delay="idx * 80" />
           <div v-if="!item.success" class="unsupported-format">
             {{ t('components.image_uploader.unsupported_format') }}
           </div>

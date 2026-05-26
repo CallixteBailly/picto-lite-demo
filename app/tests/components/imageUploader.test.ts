@@ -230,9 +230,9 @@ describe('ImageUploader component', () => {
     const [itemDetails, itemActions] = Array.from(resultsListItem!.children)
 
     expect(itemDetails?.className).toBe('item-details')
-    expect(itemDetails?.children).toHaveLength(2)
+    expect(itemDetails?.children).toHaveLength(3)
 
-    const [name, size] = Array.from(itemDetails!.children)
+    const [name, size, gauge] = Array.from(itemDetails!.children)
 
     expect(name?.className).toBe('item-name')
     expect(name?.textContent).toBe('image.jpg')
@@ -240,6 +240,7 @@ describe('ImageUploader component', () => {
     expect(size?.textContent).toBe(
       `19.84 MB → 9.63 MB (51% ${useNuxtApp().$i18n.t('components.image_uploader.image_reduction_wording')})`
     )
+    expect(gauge?.className).toBe('reduction-gauge')
 
     expect(itemActions?.className).toBe('item-actions')
     expect(itemActions?.children).toHaveLength(3)
@@ -390,9 +391,9 @@ describe('ImageUploader component', () => {
     )
 
     expect(itemDetailsPng?.className).toBe('item-details')
-    expect(itemDetailsPng?.children).toHaveLength(2)
+    expect(itemDetailsPng?.children).toHaveLength(3)
 
-    const [namePng, sizePng] = Array.from(itemDetailsPng!.children)
+    const [namePng, sizePng, gaugePng] = Array.from(itemDetailsPng!.children)
 
     expect(namePng?.className).toBe('item-name')
     expect(namePng?.textContent).toBe('image.png')
@@ -400,6 +401,7 @@ describe('ImageUploader component', () => {
     expect(sizePng?.textContent).toBe(
       `2.9 KB → 1.5 KB (50% ${useNuxtApp().$i18n.t('components.image_uploader.image_reduction_wording')})`
     )
+    expect(gaugePng?.className).toBe('reduction-gauge')
 
     expect(itemActionsPng?.className).toBe('item-actions')
     expect(itemActionsPng?.children).toHaveLength(3)
@@ -473,9 +475,9 @@ describe('ImageUploader component', () => {
     )
 
     expect(itemDetailsJpg?.className).toBe('item-details')
-    expect(itemDetailsJpg?.children).toHaveLength(2)
+    expect(itemDetailsJpg?.children).toHaveLength(3)
 
-    const [nameJpg, sizeJpg] = Array.from(itemDetailsJpg!.children)
+    const [nameJpg, sizeJpg, gaugeJpg] = Array.from(itemDetailsJpg!.children)
 
     expect(nameJpg?.className).toBe('item-name')
     expect(nameJpg?.textContent).toBe('image.jpg')
@@ -483,6 +485,7 @@ describe('ImageUploader component', () => {
     expect(sizeJpg?.textContent).toBe(
       `19.17 MB → 9.63 MB (50% ${useNuxtApp().$i18n.t('components.image_uploader.image_reduction_wording')})`
     )
+    expect(gaugeJpg?.className).toBe('reduction-gauge')
 
     expect(itemActionsJpg?.className).toBe('item-actions')
     expect(itemActionsJpg?.children).toHaveLength(3)
@@ -633,9 +636,9 @@ describe('ImageUploader component', () => {
     )
 
     expect(itemDetailsJpg?.className).toBe('item-details')
-    expect(itemDetailsJpg?.children).toHaveLength(2)
+    expect(itemDetailsJpg?.children).toHaveLength(3)
 
-    const [nameJpg, sizeJpg] = Array.from(itemDetailsJpg!.children)
+    const [nameJpg, sizeJpg, gaugeJpg] = Array.from(itemDetailsJpg!.children)
 
     expect(nameJpg?.className).toBe('item-name')
     expect(nameJpg?.textContent).toBe('image.webp')
@@ -643,6 +646,7 @@ describe('ImageUploader component', () => {
     expect(sizeJpg?.textContent).toBe(
       `19.84 MB → 4.13 MB (79% ${useNuxtApp().$i18n.t('components.image_uploader.image_reduction_wording')})`
     )
+    expect(gaugeJpg?.className).toBe('reduction-gauge')
 
     expect(itemActionsJpg?.className).toBe('item-actions')
     expect(itemActionsJpg?.children).toHaveLength(3)
