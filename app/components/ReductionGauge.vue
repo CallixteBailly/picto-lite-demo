@@ -1,6 +1,6 @@
 <template>
   <div class="reduction-gauge">
-    <div class="reduction-gauge-label">-{{ percent }}%</div>
+    <div class="reduction-gauge-label">-{{ clampedPercent }}%</div>
     <div class="reduction-gauge-track">
       <div
         class="reduction-gauge-fill"
@@ -19,18 +19,28 @@ const props = withDefaults(
   { delay: 0 }
 )
 
+const clampedPercent = computed(() =>
+  Math.max(0, Math.min(100, props.percent))
+)
+
 const gaugeClass = computed(() => {
-  if (props.percent >= 60) return 'gauge-great'
-  if (props.percent >= 20) return 'gauge-good'
-  if (props.percent > 0) return 'gauge-moderate'
+  if (clampedPercent.value >= 60) return 'gauge-great'
+  if (clampedPercent.value >= 20) return 'gauge-good'
+  if (clampedPercent.value > 0) return 'gauge-moderate'
   return 'gauge-none'
 })
 
 const animatedWidth = ref('0%')
+let rafId: number | null = null
+
 onMounted(() => {
-  requestAnimationFrame(() => {
-    animatedWidth.value = `${props.percent}%`
+  rafId = requestAnimationFrame(() => {
+    animatedWidth.value = `${clampedPercent.value}%`
   })
+})
+
+onBeforeUnmount(() => {
+  if (rafId !== null) cancelAnimationFrame(rafId)
 })
 </script>
 
