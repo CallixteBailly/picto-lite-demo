@@ -20,7 +20,8 @@
       "preview_image_wording": "Aperçu",
       "delete_item_wording": "Supprimer",
       "download_all_wording": "Tout télécharger",
-      "clear_all_wording": "Tout effacer"
+      "clear_all_wording": "Tout effacer",
+      "reduction_gauge_label": "Réduction de {percent}%"
     },
     "image_preview_modal": {
       "original_label": "Original",

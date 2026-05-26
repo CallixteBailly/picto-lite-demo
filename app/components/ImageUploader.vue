@@ -60,6 +60,20 @@
           <div :class="['item-size', reductionClass(item)]">
             {{ formatImageReductionWording(item) }}
           </div>
+          <div v-if="item.success" class="reduction-gauge-container">
+            <div
+              class="reduction-gauge-bar"
+              :class="reductionClass(item)"
+              :style="{
+                width: Math.max(0, reductionPercent(item)) + '%',
+                '--gauge-delay': idx * 0.15 + 's',
+              }"
+              role="progressbar"
+              :aria-valuenow="Math.max(0, reductionPercent(item))"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              :aria-label="gaugeAriaLabel(item)" />
+          </div>
           <div v-if="!item.success" class="unsupported-format">
             {{ t('components.image_uploader.unsupported_format') }}
           </div>
@@ -230,6 +244,12 @@ function formatSize(bytes: number): string {
 
 function reductionPercent(item: ResultItem): number {
   return Math.round((1 - item.optimizedSize / item.originalSize) * 100)
+}
+
+function gaugeAriaLabel(item: ResultItem): string {
+  return t('components.image_uploader.reduction_gauge_label', {
+    percent: Math.max(0, reductionPercent(item)),
+  })
 }
 
 function reductionClass(item: ResultItem): string {
@@ -435,6 +455,35 @@ defineExpose({ previewItem })
 
         .unsupported-format {
           color: $dark-red-color;
+        }
+
+        .reduction-gauge-container {
+          height: 6px;
+          background: $light-grey-color;
+          border-radius: 3px;
+          margin-top: 6px;
+          overflow: hidden;
+          position: relative;
+
+          .reduction-gauge-bar {
+            height: 100%;
+            border-radius: 3px;
+            width: 0;
+            transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1)
+              var(--gauge-delay, 0s);
+
+            &.reduction-good {
+              background: $green-color;
+            }
+
+            &.reduction-moderate {
+              background: $light-blue-color;
+            }
+
+            &.reduction-none {
+              background: $grey-color;
+            }
+          }
         }
       }
 

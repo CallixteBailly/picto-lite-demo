@@ -230,9 +230,9 @@ describe('ImageUploader component', () => {
     const [itemDetails, itemActions] = Array.from(resultsListItem!.children)
 
     expect(itemDetails?.className).toBe('item-details')
-    expect(itemDetails?.children).toHaveLength(2)
+    expect(itemDetails?.children).toHaveLength(3)
 
-    const [name, size] = Array.from(itemDetails!.children)
+    const [name, size, gaugeContainer] = Array.from(itemDetails!.children)
 
     expect(name?.className).toBe('item-name')
     expect(name?.textContent).toBe('image.jpg')
@@ -240,6 +240,17 @@ describe('ImageUploader component', () => {
     expect(size?.textContent).toBe(
       `19.84 MB → 9.63 MB (51% ${useNuxtApp().$i18n.t('components.image_uploader.image_reduction_wording')})`
     )
+
+    expect(gaugeContainer?.className).toBe('reduction-gauge-container')
+    expect(gaugeContainer?.children).toHaveLength(1)
+    const gaugeBar = gaugeContainer!.children[0] as HTMLElement
+    expect(gaugeBar?.className).toBe('reduction-gauge-bar reduction-good')
+    expect(gaugeBar?.getAttribute('role')).toBe('progressbar')
+    expect(gaugeBar?.getAttribute('aria-valuenow')).toBe('51')
+    expect(gaugeBar?.getAttribute('aria-valuemin')).toBe('0')
+    expect(gaugeBar?.getAttribute('aria-valuemax')).toBe('100')
+    expect(gaugeBar?.style.width).toBe('51%')
+    expect(gaugeBar?.style.getPropertyValue('--gauge-delay')).toBe('0s')
 
     expect(itemActions?.className).toBe('item-actions')
     expect(itemActions?.children).toHaveLength(3)
@@ -390,9 +401,11 @@ describe('ImageUploader component', () => {
     )
 
     expect(itemDetailsPng?.className).toBe('item-details')
-    expect(itemDetailsPng?.children).toHaveLength(2)
+    expect(itemDetailsPng?.children).toHaveLength(3)
 
-    const [namePng, sizePng] = Array.from(itemDetailsPng!.children)
+    const [namePng, sizePng, gaugeContainerPng] = Array.from(
+      itemDetailsPng!.children
+    )
 
     expect(namePng?.className).toBe('item-name')
     expect(namePng?.textContent).toBe('image.png')
@@ -400,6 +413,11 @@ describe('ImageUploader component', () => {
     expect(sizePng?.textContent).toBe(
       `2.9 KB → 1.5 KB (50% ${useNuxtApp().$i18n.t('components.image_uploader.image_reduction_wording')})`
     )
+
+    const gaugeBarPng = gaugeContainerPng!.children[0] as HTMLElement
+    expect(gaugeBarPng?.className).toBe('reduction-gauge-bar reduction-good')
+    expect(gaugeBarPng?.style.width).toBe('50%')
+    expect(gaugeBarPng?.style.getPropertyValue('--gauge-delay')).toBe('0s')
 
     expect(itemActionsPng?.className).toBe('item-actions')
     expect(itemActionsPng?.children).toHaveLength(3)
@@ -473,9 +491,11 @@ describe('ImageUploader component', () => {
     )
 
     expect(itemDetailsJpg?.className).toBe('item-details')
-    expect(itemDetailsJpg?.children).toHaveLength(2)
+    expect(itemDetailsJpg?.children).toHaveLength(3)
 
-    const [nameJpg, sizeJpg] = Array.from(itemDetailsJpg!.children)
+    const [nameJpg, sizeJpg, gaugeContainerJpg] = Array.from(
+      itemDetailsJpg!.children
+    )
 
     expect(nameJpg?.className).toBe('item-name')
     expect(nameJpg?.textContent).toBe('image.jpg')
@@ -483,6 +503,11 @@ describe('ImageUploader component', () => {
     expect(sizeJpg?.textContent).toBe(
       `19.17 MB → 9.63 MB (50% ${useNuxtApp().$i18n.t('components.image_uploader.image_reduction_wording')})`
     )
+
+    const gaugeBarJpg = gaugeContainerJpg!.children[0] as HTMLElement
+    expect(gaugeBarJpg?.className).toBe('reduction-gauge-bar reduction-good')
+    expect(gaugeBarJpg?.style.width).toBe('50%')
+    expect(gaugeBarJpg?.style.getPropertyValue('--gauge-delay')).toBe('0.3s')
 
     expect(itemActionsJpg?.className).toBe('item-actions')
     expect(itemActionsJpg?.children).toHaveLength(3)
@@ -633,9 +658,11 @@ describe('ImageUploader component', () => {
     )
 
     expect(itemDetailsJpg?.className).toBe('item-details')
-    expect(itemDetailsJpg?.children).toHaveLength(2)
+    expect(itemDetailsJpg?.children).toHaveLength(3)
 
-    const [nameJpg, sizeJpg] = Array.from(itemDetailsJpg!.children)
+    const [nameJpg, sizeJpg, gaugeContainerJpg] = Array.from(
+      itemDetailsJpg!.children
+    )
 
     expect(nameJpg?.className).toBe('item-name')
     expect(nameJpg?.textContent).toBe('image.webp')
@@ -643,6 +670,10 @@ describe('ImageUploader component', () => {
     expect(sizeJpg?.textContent).toBe(
       `19.84 MB → 4.13 MB (79% ${useNuxtApp().$i18n.t('components.image_uploader.image_reduction_wording')})`
     )
+
+    const gaugeBarJpg = gaugeContainerJpg!.children[0] as HTMLElement
+    expect(gaugeBarJpg?.className).toBe('reduction-gauge-bar reduction-good')
+    expect(gaugeBarJpg?.style.width).toBe('79%')
 
     expect(itemActionsJpg?.className).toBe('item-actions')
     expect(itemActionsJpg?.children).toHaveLength(3)
@@ -1435,5 +1466,196 @@ describe('ImageUploader component', () => {
 
     // After processing completes, bulk-actions should be visible
     expect(wrapper.find('.bulk-actions').exists()).toBe(true)
+  })
+
+  describe('reduction gauge', () => {
+    it('renders gauge for successful item', async () => {
+      const file = new File([new Uint8Array(3_000)], 'image.png', {
+        type: 'image/png',
+      })
+
+      const wrapper = await mountSuspended(ImageUploader)
+      const input = wrapper.find('input[type="file"]')
+      const inputElement = input.element as HTMLInputElement
+      const dataTransfer = new DataTransfer()
+      dataTransfer.items.add(file)
+      Object.defineProperty(inputElement, 'files', {
+        value: dataTransfer.files,
+      })
+
+      await input.trigger('change')
+      await waitForPromises()
+
+      expect(wrapper.find('.reduction-gauge-bar').exists()).toBe(true)
+    })
+
+    it('does not render gauge for failed item', async () => {
+      const file = new File([new Uint8Array(3_500)], 'image.heic', {
+        type: 'image/heic',
+      })
+
+      const wrapper = await mountSuspended(ImageUploader)
+      const input = wrapper.find('input[type="file"]')
+      const inputElement = input.element as HTMLInputElement
+      const dataTransfer = new DataTransfer()
+      dataTransfer.items.add(file)
+      Object.defineProperty(inputElement, 'files', {
+        value: dataTransfer.files,
+      })
+
+      await input.trigger('change')
+      await waitForPromises()
+
+      expect(wrapper.find('.reduction-gauge-bar').exists()).toBe(false)
+      expect(wrapper.find('.reduction-gauge-container').exists()).toBe(false)
+    })
+
+    it('sets gauge width matching reduction percent', async () => {
+      const file = new File([new Uint8Array(3_000)], 'image.png', {
+        type: 'image/png',
+      })
+
+      const wrapper = await mountSuspended(ImageUploader)
+      const input = wrapper.find('input[type="file"]')
+      const inputElement = input.element as HTMLInputElement
+      const dataTransfer = new DataTransfer()
+      dataTransfer.items.add(file)
+      Object.defineProperty(inputElement, 'files', {
+        value: dataTransfer.files,
+      })
+
+      await input.trigger('change')
+      await waitForPromises()
+
+      const bar = wrapper.find('.reduction-gauge-bar').element as HTMLElement
+      expect(bar.style.width).toBe('50%')
+    })
+
+    it('applies reduction-good class for >= 20% reduction', async () => {
+      const file = new File([new Uint8Array(3_000)], 'image.png', {
+        type: 'image/png',
+      })
+
+      const wrapper = await mountSuspended(ImageUploader)
+      const input = wrapper.find('input[type="file"]')
+      const inputElement = input.element as HTMLInputElement
+      const dataTransfer = new DataTransfer()
+      dataTransfer.items.add(file)
+      Object.defineProperty(inputElement, 'files', {
+        value: dataTransfer.files,
+      })
+
+      await input.trigger('change')
+      await waitForPromises()
+
+      expect(wrapper.find('.reduction-gauge-bar').classes()).toContain(
+        'reduction-good'
+      )
+    })
+
+    it('applies reduction-moderate class for 1-19% reduction', async () => {
+      const file = new File([new Uint8Array(1_700)], 'image.png', {
+        type: 'image/png',
+      })
+
+      const wrapper = await mountSuspended(ImageUploader)
+      const input = wrapper.find('input[type="file"]')
+      const inputElement = input.element as HTMLInputElement
+      const dataTransfer = new DataTransfer()
+      dataTransfer.items.add(file)
+      Object.defineProperty(inputElement, 'files', {
+        value: dataTransfer.files,
+      })
+
+      await input.trigger('change')
+      await waitForPromises()
+
+      expect(wrapper.find('.reduction-gauge-bar').classes()).toContain(
+        'reduction-moderate'
+      )
+    })
+
+    it('applies reduction-none class for 0% reduction', async () => {
+      const file = new File([new Uint8Array(3_500)], 'image.heic', {
+        type: 'image/heic',
+      })
+
+      const wrapper = await mountSuspended(ImageUploader)
+      const input = wrapper.find('input[type="file"]')
+      const inputElement = input.element as HTMLInputElement
+      const dataTransfer = new DataTransfer()
+      dataTransfer.items.add(file)
+      Object.defineProperty(inputElement, 'files', {
+        value: dataTransfer.files,
+      })
+
+      await input.trigger('change')
+      await waitForPromises()
+
+      expect(wrapper.find('.reduction-gauge-container').exists()).toBe(false)
+    })
+
+    it('has correct accessibility attributes on gauge bar', async () => {
+      const file = new File([new Uint8Array(3_000)], 'image.png', {
+        type: 'image/png',
+      })
+
+      const wrapper = await mountSuspended(ImageUploader)
+      const input = wrapper.find('input[type="file"]')
+      const inputElement = input.element as HTMLInputElement
+      const dataTransfer = new DataTransfer()
+      dataTransfer.items.add(file)
+      Object.defineProperty(inputElement, 'files', {
+        value: dataTransfer.files,
+      })
+
+      await input.trigger('change')
+      await waitForPromises()
+
+      const bar = wrapper.find('.reduction-gauge-bar')
+      expect(bar.attributes('role')).toBe('progressbar')
+      expect(bar.attributes('aria-valuenow')).toBe('50')
+      expect(bar.attributes('aria-valuemin')).toBe('0')
+      expect(bar.attributes('aria-valuemax')).toBe('100')
+      expect(bar.attributes('aria-label')).toBe(
+        useNuxtApp().$i18n.t(
+          'components.image_uploader.reduction_gauge_label',
+          {
+            percent: 50,
+          }
+        )
+      )
+    })
+
+    it('applies staggered delay for multiple results', async () => {
+      const pngImage = new File([new Uint8Array(3_000)], 'image.png', {
+        type: 'image/png',
+      })
+      const jpgImage = new File([new Uint8Array(20_100_000)], 'image.jpg', {
+        type: 'image/jpg',
+      })
+
+      const wrapper = await mountSuspended(ImageUploader)
+      const input = wrapper.find('input[type="file"]')
+      const inputElement = input.element as HTMLInputElement
+      const dataTransfer = new DataTransfer()
+      dataTransfer.items.add(pngImage)
+      dataTransfer.items.add(jpgImage)
+      Object.defineProperty(inputElement, 'files', {
+        value: dataTransfer.files,
+      })
+
+      await input.trigger('change')
+      await waitForPromises()
+
+      const bars = wrapper.findAll('.reduction-gauge-bar')
+      expect(bars).toHaveLength(2)
+
+      const bar1 = bars[0]!.element as HTMLElement
+      expect(bar1.style.getPropertyValue('--gauge-delay')).toBe('0s')
+
+      const bar2 = bars[1]!.element as HTMLElement
+      expect(bar2.style.getPropertyValue('--gauge-delay')).toBe('0.15s')
+    })
   })
 })
