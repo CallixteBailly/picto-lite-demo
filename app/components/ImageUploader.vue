@@ -60,6 +60,12 @@
           <div :class="['item-size', reductionClass(item)]">
             {{ formatImageReductionWording(item) }}
           </div>
+          <ReductionGauge
+            v-if="item.success"
+            :original-size="item.originalSize"
+            :optimized-size="item.optimizedSize"
+            :delay="idx * 80"
+          />
           <div v-if="!item.success" class="unsupported-format">
             {{ t('components.image_uploader.unsupported_format') }}
           </div>
@@ -291,7 +297,9 @@ async function downloadImage(item: ResultItem) {
         types: [
           {
             description: 'Image file',
-            accept: { [item.blob.type]: ['.' + item.name.split('.').pop()] },
+            accept: {
+              'image/*': ['.webp', '.png', '.jpg', '.jpeg'],
+            },
           },
         ],
       })
@@ -299,239 +307,243 @@ async function downloadImage(item: ResultItem) {
       const writable = await handle.createWritable()
       await writable.write(item.blob)
       await writable.close()
-
       return
     }
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') {
-      return
-    }
+  } catch {
+    // Fall through to fallback
   }
 
-  // Fallback for browsers without FS Access API
   downloadImageFallback(item)
 }
 
-function hasShowSaveFilePicker(
-  maybeWindow: unknown
-): maybeWindow is Window & { showSaveFilePicker: ShowSaveFilePicker } {
-  return (
-    typeof maybeWindow === 'object' &&
-    maybeWindow !== null &&
-    typeof (maybeWindow as Window & { showSaveFilePicker?: unknown })
-      .showSaveFilePicker === 'function'
-  )
+function hasShowSaveFilePicker(w: Window): w is Window & ShowSaveFilePicker {
+  return typeof w.showSaveFilePicker === 'function'
 }
-
-defineExpose({ previewItem })
 </script>
 
-<style lang="scss" scoped>
+<style scoped>
 .uploader-container {
-  .drop-zone {
-    padding: 50px 0px;
-    margin-bottom: 15px;
-    text-align: center;
-    border: 2px dashed $drop-zone-border-color;
-    border-radius: 8px;
-    cursor: pointer;
-
-    .supported-formats {
-      color: $blue-color;
-    }
-
-    &:hover,
-    &.drag-hover {
-      border-style: solid;
-    }
-  }
-
-  .webp-option-container {
-    display: flex;
-    margin-bottom: 15px;
-
-    #webp-convert {
-      cursor: pointer;
-    }
-
-    .name {
-      margin-left: 5px;
-      cursor: pointer;
-    }
-  }
-
-  .progress-container {
-    margin-bottom: 15px;
-
-    .progress-bar-container {
-      height: 8px;
-      background: $light-grey-color;
-      border-radius: 4px;
-      margin-bottom: 5px;
-      position: relative;
-      overflow: hidden;
-
-      &.is-processing::after {
-        width: 40%;
-        content: '';
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        background: linear-gradient(
-          90deg,
-          transparent,
-          rgba(255, 255, 255, 0.55),
-          transparent
-        );
-        animation: shimmer-progress 1.5s ease-in-out infinite;
-      }
-
-      .progress-bar {
-        height: 100%;
-        position: relative;
-        background: $blue-color;
-        border-radius: 4px;
-        z-index: 1;
-      }
-    }
-  }
-
-  .results-list {
-    .results-list-item {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px;
-      padding: 8px;
-      border: 1px solid $light-grey-color;
-      border-radius: 4px;
-      margin-bottom: 8px;
-
-      &:last-child {
-        margin-bottom: 0;
-      }
-
-      .item-details {
-        min-width: 0;
-        flex: 1;
-
-        .item-name {
-          font-weight: 500;
-          overflow-wrap: break-word;
-        }
-
-        .item-size {
-          font-size: 14px;
-          color: $grey-blue-color;
-
-          &.reduction-good {
-            color: $green-color;
-          }
-
-          &.reduction-none {
-            color: $grey-color;
-          }
-        }
-
-        .unsupported-format {
-          color: $dark-red-color;
-        }
-      }
-
-      .item-actions {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        margin-left: auto;
-        justify-content: flex-end;
-
-        @media (max-width: $sm) {
-          width: 100%;
-          flex-direction: column;
-        }
-      }
-
-      .preview-button {
-        padding: 4px 12px;
-        background-color: $dark-grey-color;
-        color: $white-color;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-
-        &:hover {
-          background-color: $grey-color-2;
-        }
-      }
-
-      .download-button {
-        padding: 4px 12px;
-        background-color: $blue-color;
-        color: $white-color;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-
-        &:hover {
-          background-color: $blue-color-2;
-        }
-      }
-
-      .delete-button {
-        padding: 4px 12px;
-        background-color: $dark-red-color;
-        color: $white-color;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-
-        &:hover {
-          background-color: $red-color;
-        }
-      }
-    }
-  }
-
-  .bulk-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    margin-bottom: 15px;
-
-    .download-all-button {
-      padding: 6px 14px;
-      background-color: $blue-color;
-      color: $white-color;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-
-      &:hover {
-        background-color: $blue-color-2;
-      }
-    }
-
-    .clear-all-button {
-      padding: 6px 14px;
-      background-color: $dark-grey-color;
-      color: $white-color;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-
-      &:hover {
-        background-color: $grey-color-2;
-      }
-    }
-  }
+  max-width: 800px;
+  margin: 0 auto;
 }
 
-@keyframes shimmer-progress {
-  from {
-    left: -40%;
-  }
-  to {
-    left: 100%;
-  }
+.drop-zone {
+  border: 2px dashed var(--border-color, #cbd5e1);
+  border-radius: 12px;
+  padding: 3rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: var(--surface-bg, #f8fafc);
+  color: var(--text-primary, #1e293b);
+  font-size: 1.1rem;
+}
+
+.drop-zone:hover {
+  border-color: var(--primary-color, #6366f1);
+  background: var(--surface-hover, #eef2ff);
+}
+
+.drop-zone.drag-hover {
+  border-color: var(--primary-color, #6366f1);
+  background: var(--surface-hover, #eef2ff);
+  transform: scale(1.01);
+}
+
+.supported-formats {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #64748b);
+}
+
+.webp-option-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 1rem;
+  color: var(--text-primary, #1e293b);
+}
+
+.webp-option-container label {
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.progress-container {
+  margin-top: 1.5rem;
+}
+
+.progress-bar-container {
+  width: 100%;
+  height: 8px;
+  background: var(--border-color, #e2e8f0);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar-container.is-processing {
+  animation: pulse-bar 1.5s ease infinite;
+}
+
+@keyframes pulse-bar {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.progress-bar {
+  height: 100%;
+  background: var(--primary-color, #6366f1);
+  border-radius: 4px;
+  transition: width 0.1s ease;
+}
+
+.progress-text {
+  text-align: center;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #64748b);
+}
+
+.bulk-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.download-all-button {
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary-color, #6366f1);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.download-all-button:hover {
+  background: var(--primary-hover, #4f46e5);
+}
+
+.clear-all-button {
+  padding: 0.6rem 1.2rem;
+  border: 1px solid var(--border-color, #cbd5e1);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary, #64748b);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clear-all-button:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.results-list {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.results-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  background: var(--surface-bg, #f8fafc);
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.item-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.item-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-primary, #1e293b);
+  word-break: break-all;
+}
+
+.item-size {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #64748b);
+}
+
+.item-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.preview-button,
+.download-button,
+.delete-button {
+  padding: 0.4rem 0.8rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.preview-button {
+  background: var(--surface-hover, #eef2ff);
+  color: var(--primary-color, #6366f1);
+}
+
+.preview-button:hover {
+  background: var(--primary-color, #6366f1);
+  color: white;
+}
+
+.download-button {
+  background: var(--primary-color, #6366f1);
+  color: white;
+}
+
+.download-button:hover {
+  background: var(--primary-hover, #4f46e5);
+}
+
+.delete-button {
+  background: transparent;
+  border: 1px solid var(--border-color, #e2e8f0);
+  color: var(--text-secondary, #64748b);
+}
+
+.delete-button:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.reduction-good {
+  color: #059669;
+}
+
+.reduction-moderate {
+  color: #d97706;
+}
+
+.reduction-none {
+  color: #9ca3af;
+}
+
+.unsupported-format {
+  font-size: 0.8rem;
+  color: #ef4444;
+  font-weight: 500;
 }
 </style>
