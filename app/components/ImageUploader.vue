@@ -60,6 +60,10 @@
           <div :class="['item-size', reductionClass(item)]">
             {{ formatImageReductionWording(item) }}
           </div>
+          <ReductionGauge
+            v-if="item.success"
+            :percent="reductionPercent(item)"
+            :delay="idx * 80" />
           <div v-if="!item.success" class="unsupported-format">
             {{ t('components.image_uploader.unsupported_format') }}
           </div>
@@ -291,7 +295,9 @@ async function downloadImage(item: ResultItem) {
         types: [
           {
             description: 'Image file',
-            accept: { [item.blob.type]: ['.' + item.name.split('.').pop()] },
+            accept: {
+              'image/*': [`.${item.name.split('.').pop()!}`],
+            },
           },
         ],
       })
@@ -299,42 +305,40 @@ async function downloadImage(item: ResultItem) {
       const writable = await handle.createWritable()
       await writable.write(item.blob)
       await writable.close()
-
-      return
     }
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') {
-      return
-    }
+  } catch {
+    downloadImageFallback(item)
   }
-
-  // Fallback for browsers without FS Access API
-  downloadImageFallback(item)
 }
 
-function hasShowSaveFilePicker(
-  maybeWindow: unknown
-): maybeWindow is Window & { showSaveFilePicker: ShowSaveFilePicker } {
+function hasShowSaveFilePicker(obj: unknown): obj is { showSaveFilePicker: ShowSaveFilePicker } {
   return (
-    typeof maybeWindow === 'object' &&
-    maybeWindow !== null &&
-    typeof (maybeWindow as Window & { showSaveFilePicker?: unknown })
-      .showSaveFilePicker === 'function'
+    typeof obj === 'object' &&
+    obj !== null &&
+    'showSaveFilePicker' in obj &&
+    typeof (obj as { showSaveFilePicker: unknown }).showSaveFilePicker === 'function'
   )
 }
-
-defineExpose({ previewItem })
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
+@use '~/assets/style/variables';
+
+$blue-color: variables.$blue-color;
+$green-color: variables.$green-color;
+$grey-blue-color: variables.$grey-blue-color;
+$grey-color: variables.$grey-color;
+$light-grey-color: variables.$light-grey-color;
+$dark-red-color: variables.$dark-red-color;
+
 .uploader-container {
   .drop-zone {
-    padding: 50px 0px;
-    margin-bottom: 15px;
-    text-align: center;
-    border: 2px dashed $drop-zone-border-color;
+    border: 2px dashed $light-grey-color;
     border-radius: 8px;
+    padding: 40px;
+    text-align: center;
     cursor: pointer;
+    margin-bottom: 15px;
 
     .supported-formats {
       color: $blue-color;
@@ -445,92 +449,77 @@ defineExpose({ previewItem })
         margin-left: auto;
         justify-content: flex-end;
 
-        @media (max-width: $sm) {
+        @media (max-width: variables.$sm) {
           width: 100%;
           flex-direction: column;
         }
       }
 
       .preview-button {
-        padding: 4px 12px;
-        background-color: $dark-grey-color;
-        color: $white-color;
+        padding: 4px 10px;
+        background: $blue-color;
+        color: white;
         border: none;
         border-radius: 4px;
         cursor: pointer;
-
-        &:hover {
-          background-color: $grey-color-2;
-        }
+        font-size: 14px;
       }
 
       .download-button {
-        padding: 4px 12px;
-        background-color: $blue-color;
-        color: $white-color;
+        padding: 4px 10px;
+        background: $green-color;
+        color: white;
         border: none;
         border-radius: 4px;
         cursor: pointer;
-
-        &:hover {
-          background-color: $blue-color-2;
-        }
+        font-size: 14px;
       }
 
       .delete-button {
-        padding: 4px 12px;
-        background-color: $dark-red-color;
-        color: $white-color;
+        padding: 4px 10px;
+        background: $dark-red-color;
+        color: white;
         border: none;
         border-radius: 4px;
         cursor: pointer;
-
-        &:hover {
-          background-color: $red-color;
-        }
+        font-size: 14px;
       }
     }
   }
 
   .bulk-actions {
     display: flex;
-    justify-content: flex-end;
     gap: 8px;
     margin-bottom: 15px;
+    flex-wrap: wrap;
 
     .download-all-button {
-      padding: 6px 14px;
-      background-color: $blue-color;
-      color: $white-color;
+      padding: 8px 16px;
+      background: $green-color;
+      color: white;
       border: none;
       border-radius: 4px;
       cursor: pointer;
-
-      &:hover {
-        background-color: $blue-color-2;
-      }
+      font-size: 14px;
     }
 
     .clear-all-button {
-      padding: 6px 14px;
-      background-color: $dark-grey-color;
-      color: $white-color;
+      padding: 8px 16px;
+      background: $dark-red-color;
+      color: white;
       border: none;
       border-radius: 4px;
       cursor: pointer;
-
-      &:hover {
-        background-color: $grey-color-2;
-      }
+      font-size: 14px;
     }
   }
 }
 
 @keyframes shimmer-progress {
-  from {
+  0% {
     left: -40%;
   }
-  to {
+  100% {
     left: 100%;
   }
 }
